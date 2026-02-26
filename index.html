@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gym Track Pro + Cardio</title>
+    <title>Gym Track Pro + Notes</title>
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --primary: #0a84ff; --text: #ffffff; --accent: #32d74b; --input-bg: #2c2c2e; --cardio: #ff9f0a; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; padding-bottom: 120px; }
@@ -11,8 +11,8 @@
         .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid var(--primary); }
         .card.cardio { border-left-color: var(--cardio); }
         .set-row { display: grid; grid-template-columns: 0.5fr 1.5fr 1.5fr 0.5fr; gap: 10px; margin-bottom: 10px; align-items: center; }
-        .cardio-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        input, select { background: var(--input-bg); border: none; color: white; padding: 12px; border-radius: 8px; font-size: 1rem; text-align: center; width: 100%; box-sizing: border-box; }
+        input, textarea { background: var(--input-bg); border: none; color: white; padding: 12px; border-radius: 8px; font-size: 1rem; width: 100%; box-sizing: border-box; }
+        textarea { resize: none; font-family: inherit; margin-top: 10px; font-size: 0.9rem; border: 1px solid #333; }
         .label { font-size: 0.7rem; color: #8e8e93; text-transform: uppercase; margin-bottom: 4px; display: block; }
         .btn-add-ex { background: #1c1c1e; color: var(--text); border: 2px dashed #444; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 10px; }
         .save-footer { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.95); padding: 15px; display: grid; grid-template-columns: 1fr 2fr; gap: 10px; border-top: 1px solid #333; z-index: 20; }
@@ -24,13 +24,13 @@
 <body>
 
 <div class="header">
-    <input type="date" id="date-picker" style="width: auto; background: transparent; color: white; border: 1px solid #333; padding: 5px; border-radius: 5px;">
+    <input type="date" id="date-picker" style="width: auto; background: transparent; border: 1px solid #333;">
     <div id="workout-label" style="font-size: 0.8rem; color: var(--accent); font-weight: bold;"></div>
 </div>
 
 <div id="exercise-list" style="margin-top: 20px;"></div>
-<button class="btn-add-ex" onclick="addExercise()">+ Add Lifting Exercise</button>
-<button class="btn-add-ex" style="color: var(--cardio); border-color: var(--cardio);" onclick="addCardio()">+ Add Cardio Session</button>
+<button class="btn-add-ex" onclick="addExercise()">+ Add Lifting</button>
+<button class="btn-add-ex" style="color: var(--cardio); border-color: var(--cardio);" onclick="addCardio()">+ Add Cardio</button>
 
 <div id="history-panel">
     <span style="color: var(--primary); font-weight: bold; float: right;" onclick="toggleHistory()">CLOSE</span>
@@ -48,7 +48,7 @@
     const mainLifts = ["Front Squat", "Light Deadlift", "Incline Bench", "", "Back Squat", "Deadlift", "Bench Press"];
     
     // --- PASTE YOUR URL BELOW ---
-    const url = "https://script.google.com/macros/s/AKfycbygcgrTFkyiJKUjB2xKnMDQILdD8rIwHSqMtpO1kaY6OFLX4PCvqpSdfx81jXVswWko/exec "; 
+    const url = "https://script.google.com/macros/s/AKfycbygcgrTFkyiJKUjB2xKnMDQILdD8rIwHSqMtpO1kaY6OFLX4PCvqpSdfx81jXVswWko/exec"; 
 
     const datePicker = document.getElementById('date-picker');
     datePicker.valueAsDate = new Date();
@@ -62,33 +62,31 @@
     function addExercise(name = "") {
         const div = document.createElement('div');
         div.className = 'card';
-        div.innerHTML = `<input type="text" class="exercise-name" value="${name}" style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1.1rem; width:100%; outline:none;">
+        div.innerHTML = `<input type="text" class="exercise-name" value="${name}" style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1.1rem; width:100%;">
             <div class="set-container"></div>
-            <button onclick="addSet(this)" style="width:100%; background:#2c2c2e; color:var(--primary); border:none; padding:8px; border-radius:5px; margin-top:5px;">+ Add Set</button>`;
+            <button onclick="addSet(this)" style="width:100%; background:#2c2c2e; color:var(--primary); border:none; padding:8px; border-radius:5px; margin-top:5px;">+ Set</button>
+            <textarea class="ex-notes" placeholder="Notes for this exercise..." rows="2"></textarea>`;
         document.getElementById('exercise-list').appendChild(div);
         addSet(div.querySelector('button'));
     }
 
     function addSet(btn) {
-        const container = btn.previousElementSibling;
         const row = document.createElement('div');
         row.className = 'set-row';
-        row.innerHTML = `<div style="font-weight:bold;">${container.children.length+1}</div><input type="number" placeholder="Lbs"><input type="number" placeholder="Reps"><div style="color:#ff453a;" onclick="this.parentElement.remove()">✕</div>`;
-        container.appendChild(row);
+        row.innerHTML = `<div style="font-weight:bold;">${btn.previousElementSibling.children.length+1}</div><input type="number" placeholder="Lbs"><input type="number" placeholder="Reps"><div style="color:#ff453a;" onclick="this.parentElement.remove()">✕</div>`;
+        btn.previousElementSibling.appendChild(row);
     }
 
     function addCardio() {
         const div = document.createElement('div');
         div.className = 'card cardio';
-        div.innerHTML = `
-            <div style="color: var(--cardio); font-weight: bold; margin-bottom: 10px;">CARDIO SESSION</div>
+        div.innerHTML = `<div style="color:var(--cardio); font-weight:bold; margin-bottom:10px;">CARDIO</div>
             <input type="text" class="cardio-type" placeholder="Type (Run, Bike, etc)">
-            <div class="cardio-grid">
-                <div><span class="label">Minutes</span><input type="number" class="c-dur"></div>
-                <div><span class="label">Miles</span><input type="number" class="c-dist" step="0.1"></div>
-                <div><span class="label">Avg Heart Rate</span><input type="number" class="c-hr"></div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+                <input type="number" class="c-dur" placeholder="Mins"> <input type="number" class="c-dist" placeholder="Miles" step="0.1">
             </div>
-            <div style="color:#ff453a; text-align:center; margin-top:10px; font-size:0.8rem;" onclick="this.parentElement.remove()">Remove Cardio</div>`;
+            <textarea class="c-notes" placeholder="Cardio notes..." rows="2"></textarea>
+            <div style="color:#ff453a; text-align:center; margin-top:10px; font-size:0.8rem;" onclick="this.parentElement.remove()">Remove</div>`;
         document.getElementById('exercise-list').appendChild(div);
     }
 
@@ -98,29 +96,25 @@
         const allData = [];
         const date = datePicker.value;
 
-        // Collect Lifting
         document.querySelectorAll('.card:not(.cardio)').forEach(card => {
             const name = card.querySelector('.exercise-name').value;
+            const notes = card.querySelector('.ex-notes').value;
             card.querySelectorAll('.set-row').forEach((row, i) => {
                 const ins = row.querySelectorAll('input');
-                if(ins[0].value) allData.push({date, exercise: name, set: i+1, weight: ins[0].value, reps: ins[1].value});
+                if(ins[0].value) allData.push({date, exercise: name, set: i+1, weight: ins[0].value, reps: ins[1].value, notes: i === 0 ? notes : ""});
             });
         });
 
-        // Collect Cardio
         document.querySelectorAll('.cardio').forEach(card => {
-            const type = card.querySelector('.cardio-type').value || "Cardio";
             allData.push({
-                date, 
-                exercise: "CARDIO: " + type,
-                duration: card.querySelector('.c-dur').value,
-                distance: card.querySelector('.c-dist').value,
-                heartRate: card.querySelector('.c-hr').value
+                date, exercise: "CARDIO: " + (card.querySelector('.cardio-type').value || "Session"),
+                duration: card.querySelector('.c-dur').value, distance: card.querySelector('.c-dist').value,
+                notes: card.querySelector('.c-notes').value
             });
         });
 
         await fetch(url, {method: "POST", mode: "no-cors", body: JSON.stringify(allData)});
-        alert("Workout & Cardio Logged!");
+        alert("Saved!");
         btn.innerText = "SAVE ALL";
     }
 
@@ -133,7 +127,8 @@
             document.getElementById('history-content').innerHTML = data.map(h => 
                 `<div class="history-item">
                     <b style="color:${h.exercise.includes('CARDIO') ? 'var(--cardio)' : 'var(--primary)'}">${h.exercise}</b><br>
-                    ${h.weight ? h.weight+'lbs x '+h.reps : (h.duration||0)+' mins | '+(h.distance||0)+' mi | '+(h.heartRate||0)+' bpm'}<br>
+                    ${h.weight ? h.weight+'lbs x '+h.reps : (h.duration||0)+'m | '+(h.distance||0)+'mi'}<br>
+                    ${h.notes ? '<i style="color:#aaa; font-size:0.85rem;">Note: '+h.notes+'</i><br>' : ''}
                     <small style="color:#666">${h.date.split('T')[0]}</small>
                 </div>`
             ).join('');
