@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gym Track Pro - Persistent</title>
+    <title>Gym Track Pro - Fixed Sync</title>
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --primary: #0a84ff; --text: #ffffff; --accent: #32d74b; --input-bg: #2c2c2e; --cardio: #ff9f0a; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; padding-bottom: 120px; }
@@ -15,12 +15,11 @@
         input, textarea { background: var(--input-bg); border: none; color: white; padding: 12px; border-radius: 8px; font-size: 1rem; width: 100%; box-sizing: border-box; }
         .btn-add-ex { background: #1c1c1e; color: var(--text); border: 2px dashed #444; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 10px; }
         .save-footer { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.95); padding: 15px; display: grid; grid-template-columns: 1fr 2fr; gap: 10px; border-top: 1px solid #333; z-index: 20; }
-        
         #history-panel { position: fixed; top: 100%; left: 0; width: 100%; height: 90%; background: #1c1c1e; transition: top 0.3s ease; z-index: 100; overflow-y: auto; padding: 20px; box-sizing: border-box; border-radius: 20px 20px 0 0; }
         #history-panel.open { top: 10%; }
         .calendar-input { background: var(--primary); color: white; padding: 10px; border-radius: 8px; width: 100%; margin-bottom: 20px; font-weight: bold; text-align: center; border:none; }
         .history-item { border-bottom: 1px solid #333; padding: 12px 0; display: flex; justify-content: space-between; align-items: center; }
-        .remove-card { position: absolute; top: 10px; right: 10px; color: #ff453a; font-size: 1.2rem; font-weight: bold; }
+        .remove-card { position: absolute; top: 10px; right: 10px; color: #ff453a; font-size: 1.2rem; font-weight: bold; padding: 5px; }
     </style>
 </head>
 <body>
@@ -59,7 +58,6 @@
     const splitNames = ["Sunday: Vol Legs", "Monday: Vol Back", "Tuesday: Vol Chest", "Wed: Rest", "Thursday: Heavy Legs", "Friday: Heavy Back", "Saturday: Heavy Chest"];
     const mainLifts = ["Front Squat", "Light Deadlift", "Incline Bench", "", "Back Squat", "Deadlift", "Bench Press"];
     
-    // --- PASTE URL BELOW ---
     const url = "https://script.google.com/macros/s/AKfycbygcgrTFkyiJKUjB2xKnMDQILdD8rIwHSqMtpO1kaY6OFLX4PCvqpSdfx81jXVswWko/exec"; 
     
     let fullHistoryData = [];
@@ -154,7 +152,7 @@
                 btn.disabled = false;
             }, 2000);
         } catch(e) {
-            alert("Error saving!");
+            alert("Error!");
             btn.innerText = originalText;
             btn.disabled = false;
         }
@@ -164,6 +162,7 @@
         const panel = document.getElementById('history-panel');
         panel.classList.toggle('open');
         if(panel.classList.contains('open')) {
+            document.getElementById('history-content').innerText = "Loading...";
             const res = await fetch(url);
             fullHistoryData = await res.json();
             document.getElementById('history-calendar').value = datePicker.value;
@@ -173,9 +172,14 @@
 
     function loadSpecificDay() {
         const selectedDate = document.getElementById('history-calendar').value;
-        const filtered = fullHistoryData.filter(h => h.date === selectedDate);
+        // Strip timestamps and force format matching
+        const filtered = fullHistoryData.filter(h => {
+            const hDate = h.date.split('T')[0];
+            return hDate === selectedDate;
+        });
+
         if (filtered.length === 0) {
-            document.getElementById('history-content').innerHTML = "<p style='text-align:center; margin-top:20px;'>No logs found for this date.</p>";
+            document.getElementById('history-content').innerHTML = "<p style='text-align:center; margin-top:20px;'>No logs found for " + selectedDate + "</p>";
             return;
         }
         document.getElementById('history-content').innerHTML = filtered.map(h => `
@@ -183,7 +187,7 @@
                 <div>
                     <b style="color:${h.exercise.includes('CARDIO') ? 'var(--cardio)' : 'var(--primary)'}">${h.exercise}</b><br>
                     ${h.weight ? h.weight+'lbs x '+h.reps : (h.duration||0)+'m | '+(h.distance||0)+'mi'}<br>
-                    ${h.bodyWeight ? '<span style="color:var(--accent); font-size:0.8rem;">Weight: '+h.bodyWeight+' lbs</span>' : ''}
+                    ${h.bodyWeight ? '<span style="color:var(--accent); font-size:0.8rem;">Body Weight: '+h.bodyWeight+' lbs</span>' : ''}
                 </div>
                 ${h.weight ? `<div style="color:var(--accent); font-weight:bold;">Max: ${Math.round(h.weight * (36 / (37 - h.reps)))}</div>` : ''}
             </div>
