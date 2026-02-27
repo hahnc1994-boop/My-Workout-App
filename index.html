@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gym Track Pro Elite</title>
+    <title>Gym Track Pro Elite V10</title>
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --primary: #0a84ff; --text: #ffffff; --accent: #32d74b; --input-bg: #2c2c2e; --cardio: #ff9f0a; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; padding-bottom: 120px; }
@@ -53,7 +53,7 @@
     <span style="color: var(--primary); font-weight: bold; float: right;" onclick="toggleHistory()">CLOSE</span>
     <h2 style="color: var(--primary); margin: 0 0 10px 0;">History</h2>
     <input type="date" id="history-calendar" style="background:var(--primary); color:white; padding:10px; border-radius:8px; width:100%; border:none; margin-bottom:15px;" onchange="loadSpecificDay()">
-    <div id="history-content">Select a date...</div>
+    <div id="history-content">Loading...</div>
 </div>
 
 <div class="save-footer">
@@ -73,33 +73,38 @@
 
     async function init() {
         updateUI();
-        const res = await fetch(url);
-        const data = await res.json();
-        fullHistoryData = data.history;
-        
-        // Setup Word Predictor
-        const list = document.getElementById('exercise-options');
-        list.innerHTML = data.exerciseList.map(ex => `<option value="${ex}">`).join('');
-        
-        // Calculate 7 Day Average
-        calculateWeightAvg();
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            fullHistoryData = data.history;
+            
+            const list = document.getElementById('exercise-options');
+            list.innerHTML = (data.exerciseList || []).map(ex => `<option value="${ex}">`).join('');
+            
+            calculateWeightAvg();
+        } catch(e) { console.log("Init failed", e); }
     }
 
     function calculateWeightAvg() {
-        const weights = [...new Set(fullHistoryData.filter(h => h.bodyWeight).map(h => ({date: h.date, weight: parseFloat(h.bodyWeight)})))]
-            .sort((a,b) => new Date(b.date) - new Date(a.date))
-            .slice(0, 7);
-        
+        const uniqueDayWeights = {};
+        fullHistoryData.forEach(h => {
+            if(h.bodyWeight) {
+                const d = h.date.split('T')[0];
+                uniqueDayWeights[d] = parseFloat(h.bodyWeight);
+            }
+        });
+        const weights = Object.values(uniqueDayWeights).slice(-7);
         if(weights.length > 0) {
-            const avg = weights.reduce((acc, curr) => acc + curr.weight, 0) / weights.length;
+            const avg = weights.reduce((a, b) => a + b, 0) / weights.length;
             document.getElementById('weight-avg').innerText = avg.toFixed(1);
         }
     }
 
     function updateUI() {
-        document.getElementById('workout-label').innerText = splitNames[new Date(datePicker.value + 'T00:00:00').getDay()];
+        const day = new Date(datePicker.value + 'T00:00:00').getDay();
+        document.getElementById('workout-label').innerText = splitNames[day];
         document.getElementById('exercise-list').innerHTML = "";
-        if (mainLifts[new Date(datePicker.value + 'T00:00:00').getDay()]) addExercise(mainLifts[new Date(datePicker.value + 'T00:00:00').getDay()]);
+        if (mainLifts[day]) addExercise(mainLifts[day]);
     }
 
     function addExercise(name = "") {
@@ -117,16 +122,15 @@
 
     function addSet(btn) {
         const container = btn.previousElementSibling;
-        const setNum = container.children.length + 1;
         let lastW = "", lastR = "";
-        if (setNum > 1) {
+        if (container.children.length > 0) {
             const lastRow = container.lastElementChild;
             lastW = lastRow.querySelectorAll('input')[0].value;
             lastR = lastRow.querySelectorAll('input')[1].value;
         }
         const row = document.createElement('div');
         row.className = 'set-row';
-        row.innerHTML = `<div style="font-weight:bold;">${setNum}</div>
+        row.innerHTML = `<div style="font-weight:bold;">${container.children.length+1}</div>
             <input type="number" placeholder="Lbs" value="${lastW}">
             <input type="number" placeholder="Reps" value="${lastR}">
             <div style="color:#ff453a;" onclick="this.parentElement.remove()">✕</div>`;
@@ -148,10 +152,7 @@
 
     async function saveWorkout() {
         const btn = document.getElementById('save-btn');
-        const originalText = btn.innerText;
         btn.innerText = "SAVING...";
-        btn.disabled = true;
-
         const allData = [];
         const date = datePicker.value;
         const bodyWeight = document.getElementById('body-weight').value;
@@ -174,7 +175,8 @@
 
         await fetch(url, {method: "POST", mode: "no-cors", body: JSON.stringify(allData)});
         btn.innerText = "SAVED!";
-        setTimeout(() => { btn.innerText = originalText; btn.disabled = false; }, 2000);
+        setTimeout(() => { btn.innerText = "SAVE ALL"; }, 2000);
+        init(); // Refresh data for 7D avg
     }
 
     async function toggleHistory() {
@@ -188,14 +190,19 @@
 
     function loadSpecificDay() {
         const selectedDate = document.getElementById('history-calendar').value;
-        const filtered = fullHistoryData.filter(h => h.date === selectedDate);
+        // Strict string matching
+        const filtered = fullHistoryData.filter(h => {
+            const hDate = h.date.split('T')[0];
+            return hDate === selectedDate;
+        });
+        
         if (filtered.length === 0) {
-            document.getElementById('history-content').innerHTML = "<p style='text-align:center;'>No logs.</p>";
+            document.getElementById('history-content').innerHTML = "<p style='text-align:center;'>No logs for " + selectedDate + "</p>";
             return;
         }
         document.getElementById('history-content').innerHTML = filtered.map(h => `
             <div class="history-item">
-                <div><b>${h.exercise}</b><br>${h.weight ? h.weight+'lbs x '+h.reps : 'Cardio'}</div>
+                <div><b>${h.exercise}</b><br>${h.weight ? h.weight+'lbs x '+h.reps : 'Cardio session'}</div>
                 ${h.weight ? `<div style="color:var(--accent); font-weight:bold;">Max: ${Math.round(h.weight * (36 / (37 - h.reps)))}</div>` : ''}
             </div>
         `).join('');
