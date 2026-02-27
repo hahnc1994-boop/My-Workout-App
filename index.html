@@ -3,24 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gym Track Pro V8</title>
+    <title>Gym Track Pro - Persistent</title>
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --primary: #0a84ff; --text: #ffffff; --accent: #32d74b; --input-bg: #2c2c2e; --cardio: #ff9f0a; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; padding-bottom: 120px; }
         .header { background: var(--bg); position: sticky; top: 0; z-index: 10; padding-bottom: 10px; border-bottom: 1px solid #333; }
         .top-stats { display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px; margin-top: 10px; }
-        .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid var(--primary); }
+        .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid var(--primary); position: relative; }
         .card.cardio { border-left-color: var(--cardio); }
         .set-row { display: grid; grid-template-columns: 0.5fr 1.5fr 1.5fr 0.5fr; gap: 10px; margin-bottom: 10px; align-items: center; }
         input, textarea { background: var(--input-bg); border: none; color: white; padding: 12px; border-radius: 8px; font-size: 1rem; width: 100%; box-sizing: border-box; }
         .btn-add-ex { background: #1c1c1e; color: var(--text); border: 2px dashed #444; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 10px; }
         .save-footer { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.95); padding: 15px; display: grid; grid-template-columns: 1fr 2fr; gap: 10px; border-top: 1px solid #333; z-index: 20; }
         
-        /* History & Calendar UI */
         #history-panel { position: fixed; top: 100%; left: 0; width: 100%; height: 90%; background: #1c1c1e; transition: top 0.3s ease; z-index: 100; overflow-y: auto; padding: 20px; box-sizing: border-box; border-radius: 20px 20px 0 0; }
         #history-panel.open { top: 10%; }
         .calendar-input { background: var(--primary); color: white; padding: 10px; border-radius: 8px; width: 100%; margin-bottom: 20px; font-weight: bold; text-align: center; border:none; }
         .history-item { border-bottom: 1px solid #333; padding: 12px 0; display: flex; justify-content: space-between; align-items: center; }
+        .remove-card { position: absolute; top: 10px; right: 10px; color: #ff453a; font-size: 1.2rem; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -46,7 +46,6 @@
 <div id="history-panel">
     <span style="color: var(--primary); font-weight: bold; float: right;" onclick="toggleHistory()">CLOSE</span>
     <h2 style="color: var(--primary); margin: 0 0 10px 0;">Daily History</h2>
-    <p style="font-size: 0.8rem; color: #8e8e93;">Pick a date to see what you logged:</p>
     <input type="date" id="history-calendar" class="calendar-input" onchange="loadSpecificDay()">
     <div id="history-content">Select a date above...</div>
 </div>
@@ -64,7 +63,6 @@
     const url = "https://script.google.com/macros/s/AKfycbygcgrTFkyiJKUjB2xKnMDQILdD8rIwHSqMtpO1kaY6OFLX4PCvqpSdfx81jXVswWko/exec"; 
     
     let fullHistoryData = [];
-
     const datePicker = document.getElementById('date-picker');
     datePicker.valueAsDate = new Date();
 
@@ -77,7 +75,9 @@
     function addExercise(name = "") {
         const div = document.createElement('div');
         div.className = 'card';
-        div.innerHTML = `<input type="text" class="exercise-name" value="${name}" style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1.1rem; width:100%;">
+        div.innerHTML = `
+            <div class="remove-card" onclick="this.parentElement.remove()">✕</div>
+            <input type="text" class="exercise-name" value="${name}" style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1.1rem; width:85%;">
             <div class="set-container"></div>
             <button onclick="addSet(this)" style="width:100%; background:#2c2c2e; color:var(--primary); border:none; padding:8px; border-radius:5px; margin-top:5px;">+ Set</button>
             <textarea class="ex-notes" placeholder="Notes..." rows="2"></textarea>`;
@@ -88,15 +88,12 @@
     function addSet(btn) {
         const container = btn.previousElementSibling;
         const setNum = container.children.length + 1;
-        
-        // AUTO-FILL LOGIC: Grab values from the row above
         let lastW = "", lastR = "";
         if (setNum > 1) {
             const lastRow = container.lastElementChild;
             lastW = lastRow.querySelectorAll('input')[0].value;
             lastR = lastRow.querySelectorAll('input')[1].value;
         }
-
         const row = document.createElement('div');
         row.className = 'set-row';
         row.innerHTML = `<div style="font-weight:bold;">${setNum}</div>
@@ -109,19 +106,23 @@
     function addCardio() {
         const div = document.createElement('div');
         div.className = 'card cardio';
-        div.innerHTML = `<div style="color:var(--cardio); font-weight:bold; margin-bottom:10px;">CARDIO SESSION</div>
+        div.innerHTML = `
+            <div class="remove-card" onclick="this.parentElement.remove()">✕</div>
+            <div style="color:var(--cardio); font-weight:bold; margin-bottom:10px;">CARDIO SESSION</div>
             <input type="text" class="cardio-type" placeholder="Type (Run, Bike, etc)">
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
                 <input type="number" class="c-dur" placeholder="Mins"> <input type="number" class="c-dist" placeholder="Miles" step="0.1">
             </div>
-            <textarea class="c-notes" placeholder="Notes..." rows="2"></textarea>
-            <div style="color:#ff453a; text-align:center; margin-top:10px; font-size:0.8rem;" onclick="this.parentElement.remove()">Remove</div>`;
+            <textarea class="c-notes" placeholder="Notes..." rows="2"></textarea>`;
         document.getElementById('exercise-list').appendChild(div);
     }
 
     async function saveWorkout() {
         const btn = document.getElementById('save-btn');
+        const originalText = btn.innerText;
         btn.innerText = "SAVING...";
+        btn.disabled = true;
+
         const allData = [];
         const date = datePicker.value;
         const bodyWeight = document.getElementById('body-weight').value;
@@ -143,9 +144,20 @@
             });
         });
 
-        await fetch(url, {method: "POST", mode: "no-cors", body: JSON.stringify(allData)});
-        alert("Saved!");
-        btn.innerText = "SAVE ALL";
+        try {
+            await fetch(url, {method: "POST", mode: "no-cors", body: JSON.stringify(allData)});
+            btn.style.background = "var(--primary)";
+            btn.innerText = "SAVED!";
+            setTimeout(() => {
+                btn.style.background = "var(--accent)";
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }, 2000);
+        } catch(e) {
+            alert("Error saving!");
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
     }
 
     async function toggleHistory() {
@@ -154,20 +166,18 @@
         if(panel.classList.contains('open')) {
             const res = await fetch(url);
             fullHistoryData = await res.json();
-            document.getElementById('history-calendar').valueAsDate = new Date();
+            document.getElementById('history-calendar').value = datePicker.value;
             loadSpecificDay();
         }
     }
 
     function loadSpecificDay() {
         const selectedDate = document.getElementById('history-calendar').value;
-        const filtered = fullHistoryData.filter(h => h.date.split('T')[0] === selectedDate);
-        
+        const filtered = fullHistoryData.filter(h => h.date === selectedDate);
         if (filtered.length === 0) {
             document.getElementById('history-content').innerHTML = "<p style='text-align:center; margin-top:20px;'>No logs found for this date.</p>";
             return;
         }
-
         document.getElementById('history-content').innerHTML = filtered.map(h => `
             <div class="history-item">
                 <div>
