@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gym Track Pro - Achievements</title>
+    <title>Gym Track Pro Elite V11</title>
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --primary: #0a84ff; --text: #ffffff; --accent: #32d74b; --input-bg: #2c2c2e; --cardio: #ff9f0a; --gold: #ffd700; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; padding-bottom: 120px; }
@@ -16,21 +16,17 @@
         .set-row { display: grid; grid-template-columns: 0.5fr 1.5fr 1.5fr 0.5fr; gap: 10px; margin-bottom: 10px; align-items: center; }
         input, textarea { background: var(--input-bg); border: none; color: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; width: 100%; box-sizing: border-box; }
         .btn-add-ex { background: #1c1c1e; color: var(--text); border: 2px dashed #444; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 10px; }
-        
-        /* Footer UI */
         .save-footer { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.95); padding: 15px; display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 10px; border-top: 1px solid #333; z-index: 20; }
-        
-        /* Slide-up Panels */
         .panel { position: fixed; top: 100%; left: 0; width: 100%; height: 90%; background: #1c1c1e; transition: top 0.3s ease; z-index: 100; overflow-y: auto; padding: 20px; box-sizing: border-box; border-radius: 20px 20px 0 0; }
         .panel.open { top: 10%; }
-        
-        /* Achievement Styling */
-        .achieve-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-        .achieve-card { background: #2c2c2e; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #444; }
-        .achieve-val { font-size: 1.5rem; font-weight: bold; color: var(--gold); display: block; }
-        .achieve-label { font-size: 0.7rem; color: #8e8e93; text-transform: uppercase; margin-top: 5px; display: block; }
-        .history-item { border-bottom: 1px solid #333; padding: 12px 0; display: flex; justify-content: space-between; align-items: center; }
-        .remove-card { position: absolute; top: 10px; right: 10px; color: #ff453a; font-weight: bold; padding: 5px; }
+        .achieve-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .achieve-card { background: #2c2c2e; padding: 12px; border-radius: 12px; text-align: center; border: 1px solid #444; }
+        .achieve-val { font-size: 1.3rem; font-weight: bold; color: var(--gold); display: block; }
+        .achieve-label { font-size: 0.6rem; color: #8e8e93; text-transform: uppercase; margin-top: 4px; display: block; }
+        .ratio-tag { font-size: 0.7rem; color: var(--accent); font-weight: bold; margin-top: 2px; display: block; }
+        .heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 15px 0; }
+        .heat-cell { aspect-ratio: 1; background: #333; border-radius: 2px; }
+        .heat-active { background: var(--accent); box-shadow: 0 0 5px var(--accent); }
     </style>
 </head>
 <body>
@@ -59,19 +55,22 @@
 
 <div id="achieve-panel" class="panel">
     <span style="color: var(--gold); font-weight: bold; float: right;" onclick="closePanels()">CLOSE</span>
-    <h2 style="color: var(--gold); margin: 0 0 5px 0;">Achievements</h2>
-    <p id="year-label" style="font-size: 0.8rem; color: #8e8e93; margin-bottom: 20px;"></p>
-    
-    <div class="achieve-card" style="width: 100%; box-sizing: border-box; margin-bottom: 15px;">
-        <span id="stat-days" class="achieve-val">0</span>
-        <span class="achieve-label">Total Days Exercised This Year</span>
-    </div>
+    <h2 style="color: var(--gold); margin: 0;">Elite Dashboard</h2>
+    <p style="font-size: 0.7rem; color: #8e8e93; margin-bottom: 20px;">Performance & Consistency</p>
+
+    <span class="stat-label">30-Day Activity Heatmap</span>
+    <div id="heatmap" class="heatmap"></div>
 
     <div class="achieve-grid">
-        <div class="achieve-card"><span id="pb-bench" class="achieve-val">--</span><span class="achieve-label">Bench Press Max</span></div>
-        <div class="achieve-card"><span id="pb-dead" class="achieve-val">--</span><span class="achieve-label">Deadlift Max</span></div>
-        <div class="achieve-card"><span id="pb-incline" class="achieve-val">--</span><span class="achieve-label">Incline Bench Max</span></div>
-        <div class="achieve-card"><span id="pb-squat" class="achieve-val">--</span><span class="achieve-label">Back Squat Max</span></div>
+        <div class="achieve-card"><span id="pb-bench" class="achieve-val">--</span><span id="ratio-bench" class="ratio-tag">--</span><span class="achieve-label">Bench Max</span></div>
+        <div class="achieve-card"><span id="pb-dead" class="achieve-val">--</span><span id="ratio-dead" class="ratio-tag">--</span><span class="achieve-label">Deadlift Max</span></div>
+        <div class="achieve-card"><span id="pb-incline" class="achieve-val">--</span><span id="ratio-incline" class="ratio-tag">--</span><span class="achieve-label">Incline Max</span></div>
+        <div class="achieve-card"><span id="pb-squat" class="achieve-val">--</span><span id="ratio-squat" class="ratio-tag">--</span><span class="achieve-label">Back Squat Max</span></div>
+    </div>
+
+    <div class="achieve-card" style="width:100%; box-sizing:border-box; display:grid; grid-template-columns:1fr 1fr;">
+        <div><span id="stat-miles" class="achieve-val">0</span><span class="achieve-label">Total Miles</span></div>
+        <div><span id="stat-days" class="achieve-val">0</span><span class="achieve-label">Days Logged</span></div>
     </div>
 </div>
 
@@ -84,7 +83,7 @@
 <script>
     const splitNames = ["Sunday: Vol Legs", "Monday: Vol Back", "Tuesday: Vol Chest", "Wed: Rest", "Thursday: Heavy Legs", "Friday: Heavy Back", "Saturday: Heavy Chest"];
     const mainLifts = ["Front Squat", "Light Deadlift", "Incline Bench", "", "Back Squat", "Deadlift", "Bench Press"];
-    const url = "https://script.google.com/macros/s/AKfycbygcgrTFkyiJKUjB2xKnMDQILdD8rIwHSqMtpO1kaY6OFLX4PCvqpSdfx81jXVswWko/exec"; 
+    const url = "YOUR_WEB_APP_URL_HERE"; 
     
     let fullHistoryData = [];
     const datePicker = document.getElementById('date-picker');
@@ -96,10 +95,9 @@
             const res = await fetch(url);
             const data = await res.json();
             fullHistoryData = data.history;
-            const list = document.getElementById('exercise-options');
-            list.innerHTML = (data.exerciseList || []).map(ex => `<option value="${ex}">`).join('');
+            document.getElementById('exercise-options').innerHTML = (data.exerciseList || []).map(ex => `<option value="${ex}">`).join('');
             calculateWeightAvg();
-        } catch(e) { console.log("Init failed", e); }
+        } catch(e) { console.log("Init fail", e); }
     }
 
     function calculateWeightAvg() {
@@ -124,7 +122,7 @@
         div.className = 'card';
         div.innerHTML = `
             <div class="remove-card" onclick="this.parentElement.remove()">✕</div>
-            <input type="text" class="exercise-name" list="exercise-options" value="${name}" style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1.1rem; width:85%;" placeholder="Exercise Name">
+            <input type="text" class="exercise-name" list="exercise-options" value="${name}" style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1.1rem; width:85%;">
             <div class="set-container"></div>
             <button onclick="addSet(this)" style="width:100%; background:#2c2c2e; color:var(--primary); border:none; padding:8px; border-radius:5px; margin-top:5px;">+ Set</button>
             <textarea class="ex-notes" placeholder="Notes..." rows="2" style="margin-top:10px;"></textarea>`;
@@ -154,9 +152,9 @@
         div.innerHTML = `
             <div class="remove-card" onclick="this.parentElement.remove()">✕</div>
             <div style="color:var(--cardio); font-weight:bold; margin-bottom:10px;">CARDIO</div>
-            <input type="text" class="cardio-type" placeholder="Type (Run, Bike, etc)" list="exercise-options">
+            <input type="text" class="cardio-type" placeholder="Type" list="exercise-options">
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
-                <input type="number" class="c-dur" placeholder="Mins"> <input type="number" class="c-dist" placeholder="Miles" step="0.1">
+                <input type="number" class="c-dur" placeholder="Mins"><input type="number" class="c-dist" placeholder="Miles" step="0.1">
             </div>`;
         document.getElementById('exercise-list').appendChild(div);
     }
@@ -184,9 +182,7 @@
         init();
     }
 
-    function closePanels() {
-        document.querySelectorAll('.panel').forEach(p => p.classList.remove('open'));
-    }
+    function closePanels() { document.querySelectorAll('.panel').forEach(p => p.classList.remove('open')); }
 
     function toggleHistory() {
         closePanels();
@@ -197,29 +193,40 @@
 
     function toggleAchieve() {
         closePanels();
-        const panel = document.getElementById('achieve-panel');
-        panel.classList.add('open');
-        
+        document.getElementById('achieve-panel').classList.add('open');
         const currentYear = new Date().getFullYear();
-        document.getElementById('year-label').innerText = "Personal Records for " + currentYear;
-        
         const thisYearData = fullHistoryData.filter(h => h.date.startsWith(currentYear.toString()));
-        const uniqueDays = [...new Set(thisYearData.map(h => h.date.split('T')[0]))].length;
-        document.getElementById('stat-days').innerText = uniqueDays;
+        
+        const heatmap = document.getElementById('heatmap');
+        heatmap.innerHTML = "";
+        const today = new Date();
+        for(let i=29; i>=0; i--) {
+            const d = new Date(); d.setDate(today.getDate() - i);
+            const dStr = d.toISOString().split('T')[0];
+            const active = fullHistoryData.some(h => h.date.split('T')[0] === dStr);
+            heatmap.innerHTML += `<div class="heat-cell ${active ? 'heat-active' : ''}"></div>`;
+        }
 
-        const getPB = (name) => {
+        let miles = 0;
+        thisYearData.forEach(h => { if(h.distance) miles += parseFloat(h.distance); });
+        document.getElementById('stat-miles').innerText = miles.toFixed(1);
+        document.getElementById('stat-days').innerText = [...new Set(thisYearData.map(h => h.date.split('T')[0]))].length;
+
+        const lastWeight = parseFloat(document.getElementById('weight-avg').innerText) || 1;
+        const setPB = (id, ratioId, name) => {
             let max = 0;
             thisYearData.filter(h => h.exercise.toLowerCase().includes(name.toLowerCase())).forEach(h => {
                 const orm = Math.round(h.weight * (36 / (37 - h.reps)));
                 if (orm > max) max = orm;
             });
-            return max > 0 ? max + " lbs" : "--";
+            document.getElementById(id).innerText = max > 0 ? max : "--";
+            document.getElementById(ratioId).innerText = max > 0 ? (max / lastWeight).toFixed(2) + "x BW" : "--";
         };
 
-        document.getElementById('pb-bench').innerText = getPB("Bench Press");
-        document.getElementById('pb-dead').innerText = getPB("Deadlift");
-        document.getElementById('pb-incline').innerText = getPB("Incline Bench");
-        document.getElementById('pb-squat').innerText = getPB("Back Squat");
+        setPB("pb-bench", "ratio-bench", "Bench Press");
+        setPB("pb-dead", "ratio-dead", "Deadlift");
+        setPB("pb-incline", "ratio-incline", "Incline Bench");
+        setPB("pb-squat", "ratio-squat", "Back Squat");
     }
 
     function loadSpecificDay() {
@@ -227,10 +234,7 @@
         const filtered = fullHistoryData.filter(h => h.date.split('T')[0] === selectedDate);
         if (filtered.length === 0) { document.getElementById('history-content').innerHTML = "<p style='text-align:center;'>No logs.</p>"; return; }
         document.getElementById('history-content').innerHTML = filtered.map(h => `
-            <div class="history-item">
-                <div><b>${h.exercise}</b><br>${h.weight ? h.weight+'lbs x '+h.reps : 'Cardio'}</div>
-                ${h.weight ? `<div style="color:var(--accent); font-weight:bold;">Max: ${Math.round(h.weight * (36 / (37 - h.reps)))}</div>` : ''}
-            </div>
+            <div style="border-bottom:1px solid #333; padding:10px 0;"><b>${h.exercise}</b><br>${h.weight ? h.weight+'x'+h.reps : 'Cardio'}</div>
         `).join('');
     }
 
