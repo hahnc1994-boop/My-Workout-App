@@ -3,36 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gym Track Pro - Fixed Sync</title>
+    <title>Gym Track Pro Elite</title>
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --primary: #0a84ff; --text: #ffffff; --accent: #32d74b; --input-bg: #2c2c2e; --cardio: #ff9f0a; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; padding-bottom: 120px; }
         .header { background: var(--bg); position: sticky; top: 0; z-index: 10; padding-bottom: 10px; border-bottom: 1px solid #333; }
-        .top-stats { display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px; margin-top: 10px; }
+        .top-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .stat-box { display: flex; flex-direction: column; }
+        .stat-label { font-size: 0.6rem; color: #8e8e93; text-transform: uppercase; margin-bottom: 4px; }
         .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid var(--primary); position: relative; }
         .card.cardio { border-left-color: var(--cardio); }
         .set-row { display: grid; grid-template-columns: 0.5fr 1.5fr 1.5fr 0.5fr; gap: 10px; margin-bottom: 10px; align-items: center; }
-        input, textarea { background: var(--input-bg); border: none; color: white; padding: 12px; border-radius: 8px; font-size: 1rem; width: 100%; box-sizing: border-box; }
+        input, textarea { background: var(--input-bg); border: none; color: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; width: 100%; box-sizing: border-box; }
         .btn-add-ex { background: #1c1c1e; color: var(--text); border: 2px dashed #444; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 10px; }
         .save-footer { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.95); padding: 15px; display: grid; grid-template-columns: 1fr 2fr; gap: 10px; border-top: 1px solid #333; z-index: 20; }
         #history-panel { position: fixed; top: 100%; left: 0; width: 100%; height: 90%; background: #1c1c1e; transition: top 0.3s ease; z-index: 100; overflow-y: auto; padding: 20px; box-sizing: border-box; border-radius: 20px 20px 0 0; }
         #history-panel.open { top: 10%; }
-        .calendar-input { background: var(--primary); color: white; padding: 10px; border-radius: 8px; width: 100%; margin-bottom: 20px; font-weight: bold; text-align: center; border:none; }
         .history-item { border-bottom: 1px solid #333; padding: 12px 0; display: flex; justify-content: space-between; align-items: center; }
-        .remove-card { position: absolute; top: 10px; right: 10px; color: #ff453a; font-size: 1.2rem; font-weight: bold; padding: 5px; }
+        .remove-card { position: absolute; top: 10px; right: 10px; color: #ff453a; font-weight: bold; padding: 5px; }
     </style>
 </head>
 <body>
 
 <div class="header">
     <div class="top-stats">
-        <div>
-            <span style="font-size: 0.7rem; color: #8e8e93; text-transform: uppercase;">Workout Date</span>
+        <div class="stat-box">
+            <span class="stat-label">Date</span>
             <input type="date" id="date-picker">
         </div>
-        <div>
-            <span style="font-size: 0.7rem; color: #8e8e93; text-transform: uppercase;">Body Weight (lbs)</span>
-            <input type="number" id="body-weight" placeholder="---">
+        <div class="stat-box">
+            <span class="stat-label">Weight</span>
+            <input type="number" id="body-weight" placeholder="Lbs">
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">7D Avg</span>
+            <div id="weight-avg" style="color: var(--accent); font-weight: bold; padding: 10px; background: var(--input-bg); border-radius: 8px; text-align: center;">--</div>
         </div>
     </div>
     <div id="workout-label" style="font-size: 0.8rem; color: var(--accent); margin-top: 10px; font-weight: bold;"></div>
@@ -42,11 +47,13 @@
 <button class="btn-add-ex" onclick="addExercise()">+ Add Lifting</button>
 <button class="btn-add-ex" style="color: var(--cardio); border-color: var(--cardio);" onclick="addCardio()">+ Add Cardio</button>
 
+<datalist id="exercise-options"></datalist>
+
 <div id="history-panel">
     <span style="color: var(--primary); font-weight: bold; float: right;" onclick="toggleHistory()">CLOSE</span>
-    <h2 style="color: var(--primary); margin: 0 0 10px 0;">Daily History</h2>
-    <input type="date" id="history-calendar" class="calendar-input" onchange="loadSpecificDay()">
-    <div id="history-content">Select a date above...</div>
+    <h2 style="color: var(--primary); margin: 0 0 10px 0;">History</h2>
+    <input type="date" id="history-calendar" style="background:var(--primary); color:white; padding:10px; border-radius:8px; width:100%; border:none; margin-bottom:15px;" onchange="loadSpecificDay()">
+    <div id="history-content">Select a date...</div>
 </div>
 
 <div class="save-footer">
@@ -64,6 +71,31 @@
     const datePicker = document.getElementById('date-picker');
     datePicker.valueAsDate = new Date();
 
+    async function init() {
+        updateUI();
+        const res = await fetch(url);
+        const data = await res.json();
+        fullHistoryData = data.history;
+        
+        // Setup Word Predictor
+        const list = document.getElementById('exercise-options');
+        list.innerHTML = data.exerciseList.map(ex => `<option value="${ex}">`).join('');
+        
+        // Calculate 7 Day Average
+        calculateWeightAvg();
+    }
+
+    function calculateWeightAvg() {
+        const weights = [...new Set(fullHistoryData.filter(h => h.bodyWeight).map(h => ({date: h.date, weight: parseFloat(h.bodyWeight)})))]
+            .sort((a,b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 7);
+        
+        if(weights.length > 0) {
+            const avg = weights.reduce((acc, curr) => acc + curr.weight, 0) / weights.length;
+            document.getElementById('weight-avg').innerText = avg.toFixed(1);
+        }
+    }
+
     function updateUI() {
         document.getElementById('workout-label').innerText = splitNames[new Date(datePicker.value + 'T00:00:00').getDay()];
         document.getElementById('exercise-list').innerHTML = "";
@@ -75,10 +107,10 @@
         div.className = 'card';
         div.innerHTML = `
             <div class="remove-card" onclick="this.parentElement.remove()">✕</div>
-            <input type="text" class="exercise-name" value="${name}" style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1.1rem; width:85%;">
+            <input type="text" class="exercise-name" list="exercise-options" value="${name}" style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1.1rem; width:85%;" placeholder="Exercise Name">
             <div class="set-container"></div>
             <button onclick="addSet(this)" style="width:100%; background:#2c2c2e; color:var(--primary); border:none; padding:8px; border-radius:5px; margin-top:5px;">+ Set</button>
-            <textarea class="ex-notes" placeholder="Notes..." rows="2"></textarea>`;
+            <textarea class="ex-notes" placeholder="Notes..." rows="2" style="margin-top:10px;"></textarea>`;
         document.getElementById('exercise-list').appendChild(div);
         addSet(div.querySelector('button'));
     }
@@ -106,12 +138,11 @@
         div.className = 'card cardio';
         div.innerHTML = `
             <div class="remove-card" onclick="this.parentElement.remove()">✕</div>
-            <div style="color:var(--cardio); font-weight:bold; margin-bottom:10px;">CARDIO SESSION</div>
-            <input type="text" class="cardio-type" placeholder="Type (Run, Bike, etc)">
+            <div style="color:var(--cardio); font-weight:bold; margin-bottom:10px;">CARDIO</div>
+            <input type="text" class="cardio-type" placeholder="Type (Run, Bike, etc)" list="exercise-options">
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
                 <input type="number" class="c-dur" placeholder="Mins"> <input type="number" class="c-dist" placeholder="Miles" step="0.1">
-            </div>
-            <textarea class="c-notes" placeholder="Notes..." rows="2"></textarea>`;
+            </div>`;
         document.getElementById('exercise-list').appendChild(div);
     }
 
@@ -137,34 +168,19 @@
         document.querySelectorAll('.cardio').forEach(card => {
             allData.push({
                 date, exercise: "CARDIO: " + (card.querySelector('.cardio-type').value || "Session"),
-                duration: card.querySelector('.c-dur').value, distance: card.querySelector('.c-dist').value,
-                notes: card.querySelector('.c-notes').value, bodyWeight: bodyWeight
+                duration: card.querySelector('.c-dur').value, distance: card.querySelector('.c-dist').value, bodyWeight: bodyWeight
             });
         });
 
-        try {
-            await fetch(url, {method: "POST", mode: "no-cors", body: JSON.stringify(allData)});
-            btn.style.background = "var(--primary)";
-            btn.innerText = "SAVED!";
-            setTimeout(() => {
-                btn.style.background = "var(--accent)";
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }, 2000);
-        } catch(e) {
-            alert("Error!");
-            btn.innerText = originalText;
-            btn.disabled = false;
-        }
+        await fetch(url, {method: "POST", mode: "no-cors", body: JSON.stringify(allData)});
+        btn.innerText = "SAVED!";
+        setTimeout(() => { btn.innerText = originalText; btn.disabled = false; }, 2000);
     }
 
     async function toggleHistory() {
         const panel = document.getElementById('history-panel');
         panel.classList.toggle('open');
         if(panel.classList.contains('open')) {
-            document.getElementById('history-content').innerText = "Loading...";
-            const res = await fetch(url);
-            fullHistoryData = await res.json();
             document.getElementById('history-calendar').value = datePicker.value;
             loadSpecificDay();
         }
@@ -172,30 +188,21 @@
 
     function loadSpecificDay() {
         const selectedDate = document.getElementById('history-calendar').value;
-        // Strip timestamps and force format matching
-        const filtered = fullHistoryData.filter(h => {
-            const hDate = h.date.split('T')[0];
-            return hDate === selectedDate;
-        });
-
+        const filtered = fullHistoryData.filter(h => h.date === selectedDate);
         if (filtered.length === 0) {
-            document.getElementById('history-content').innerHTML = "<p style='text-align:center; margin-top:20px;'>No logs found for " + selectedDate + "</p>";
+            document.getElementById('history-content').innerHTML = "<p style='text-align:center;'>No logs.</p>";
             return;
         }
         document.getElementById('history-content').innerHTML = filtered.map(h => `
             <div class="history-item">
-                <div>
-                    <b style="color:${h.exercise.includes('CARDIO') ? 'var(--cardio)' : 'var(--primary)'}">${h.exercise}</b><br>
-                    ${h.weight ? h.weight+'lbs x '+h.reps : (h.duration||0)+'m | '+(h.distance||0)+'mi'}<br>
-                    ${h.bodyWeight ? '<span style="color:var(--accent); font-size:0.8rem;">Body Weight: '+h.bodyWeight+' lbs</span>' : ''}
-                </div>
+                <div><b>${h.exercise}</b><br>${h.weight ? h.weight+'lbs x '+h.reps : 'Cardio'}</div>
                 ${h.weight ? `<div style="color:var(--accent); font-weight:bold;">Max: ${Math.round(h.weight * (36 / (37 - h.reps)))}</div>` : ''}
             </div>
         `).join('');
     }
 
     datePicker.addEventListener('change', updateUI);
-    updateUI();
+    init();
 </script>
 </body>
 </html>
