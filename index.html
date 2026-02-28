@@ -85,7 +85,6 @@
     const splitNames = ["Sunday: Vol Legs", "Monday: Vol Back", "Tuesday: Vol Chest", "Wed: Rest", "Thursday: Heavy Legs", "Friday: Heavy Back", "Saturday: Heavy Chest"];
     const mainLifts = ["Front Squat", "Light Deadlift", "Incline Bench", "", "Back Squat", "Deadlift", "Bench Press"];
     
-    // IMPORTANT: PASTE YOUR GOOGLE WEB APP URL BETWEEN THE QUOTES BELOW
     const url = "https://script.google.com/macros/s/AKfycbygcgrTFkyiJKUjB2xKnMDQILdD8rIwHSqMtpO1kaY6OFLX4PCvqpSdfx81jXVswWko/exec"; 
     
     let fullHistoryData = [];
@@ -155,9 +154,11 @@
         div.innerHTML = `
             <div class="remove-card" onclick="this.parentElement.remove()">✕</div>
             <div style="color:var(--cardio); font-weight:bold; margin-bottom:10px;">CARDIO</div>
-            <input type="text" class="cardio-type" placeholder="Type" list="exercise-options">
+            <input type="text" class="cardio-type" placeholder="Type (Run, Row, etc)" list="exercise-options">
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
-                <input type="number" class="c-dur" placeholder="Mins"><input type="number" class="c-dist" placeholder="Miles" step="0.1">
+                <input type="text" class="c-dur" placeholder="Time (MM:SS)">
+                <input type="number" class="c-dist" placeholder="Miles" step="0.1">
+                <input type="number" class="c-hr" placeholder="Avg HR" style="grid-column: span 2;">
             </div>`;
         document.getElementById('exercise-list').appendChild(div);
     }
@@ -177,7 +178,14 @@
             });
         });
         document.querySelectorAll('.cardio').forEach(card => {
-            allData.push({date, exercise: "CARDIO: " + (card.querySelector('.cardio-type').value || "Session"), duration: card.querySelector('.c-dur').value, distance: card.querySelector('.c-dist').value, bodyWeight: bodyWeight});
+            allData.push({
+                date, 
+                exercise: "CARDIO: " + (card.querySelector('.cardio-type').value || "Session"), 
+                duration: card.querySelector('.c-dur').value, 
+                distance: card.querySelector('.c-dist').value, 
+                heartRate: card.querySelector('.c-hr').value,
+                bodyWeight: bodyWeight
+            });
         });
         await fetch(url, {method: "POST", mode: "no-cors", body: JSON.stringify(allData)});
         btn.innerText = "SAVED!";
@@ -240,7 +248,8 @@
         document.getElementById('history-content').innerHTML = filtered.map(h => {
             let detail = "";
             if (h.exercise.includes("CARDIO")) {
-                detail = (h.distance || 0) + " miles / " + (h.duration || 0) + " mins";
+                let hrInfo = h.heartRate ? ` | HR: ${h.heartRate}` : "";
+                detail = `${h.distance || 0} mi / ${h.duration || 0}${hrInfo}`;
             } else {
                 detail = (h.weight || 0) + ' lbs x ' + (h.reps || 0);
             }
