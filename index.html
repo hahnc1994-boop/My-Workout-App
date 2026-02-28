@@ -28,6 +28,7 @@
         .heat-cell { aspect-ratio: 1; background: #333; border-radius: 2px; }
         .heat-active { background: var(--accent); box-shadow: 0 0 5px var(--accent); }
         .remove-card { position: absolute; right: 10px; top: 10px; color: #ff453a; font-weight: bold; cursor: pointer; }
+        .top-set-badge { background: var(--gold); color: black; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 8px; vertical-align: middle; }
     </style>
 </head>
 <body>
@@ -254,17 +255,38 @@
         let dailyVol = 0;
         let dayWeight = "--";
 
+        // Logic to find Top Set for each exercise
+        const topSets = {};
+        filtered.forEach(h => {
+            if(!h.exercise.includes("CARDIO") && h.weight) {
+                const w = parseFloat(h.weight);
+                const r = parseFloat(h.reps);
+                if (!topSets[h.exercise] || w > topSets[h.exercise].w || (w === topSets[h.exercise].w && r > topSets[h.exercise].r)) {
+                    topSets[h.exercise] = {w, r};
+                }
+            }
+        });
+
         const content = filtered.map(h => {
-            if (h.bodyWeight) dayWeight = h.bodyWeight; // Capture body weight if it exists
+            if (h.bodyWeight) dayWeight = h.bodyWeight;
             
             let detail = "";
+            let isTopSet = false;
+
             if (h.exercise.includes("CARDIO")) {
                 let hrInfo = h.heartRate ? ` | HR: ${h.heartRate}` : "";
                 detail = `${h.distance || 0} mi / ${h.duration || 0}${hrInfo}`;
             } else {
                 const vol = (h.weight || 0) * (h.reps || 0);
                 dailyVol += vol;
-                detail = `${h.weight || 0} lbs x ${h.reps || 0} (Vol: ${vol})`;
+                
+                // Check if this specific row is the Top Set
+                if(topSets[h.exercise] && parseFloat(h.weight) === topSets[h.exercise].w && parseFloat(h.reps) === topSets[h.exercise].r) {
+                    isTopSet = true;
+                    topSets[h.exercise] = {w: -1, r: -1}; // Prevents duplicate stars if you do the exact same top set twice
+                }
+                
+                detail = `${h.weight || 0} lbs x ${h.reps || 0} (Vol: ${vol})${isTopSet ? '<span class="top-set-badge">⭐ TOP</span>' : ''}`;
             }
             return `<div style="border-bottom:1px solid #333; padding:10px 0;"><b>${h.exercise}</b><br>${detail}</div>`;
         }).join('');
