@@ -223,7 +223,6 @@
         let totalVolume = 0;
         thisYearData.forEach(h => { 
             if(h.distance) miles += parseFloat(h.distance); 
-            // Calculate volume for the dashboard summary
             if(h.weight && h.reps) totalVolume += (parseFloat(h.weight) * parseFloat(h.reps));
         });
         document.getElementById('stat-miles').innerText = miles.toFixed(1);
@@ -253,7 +252,11 @@
         if (filtered.length === 0) { document.getElementById('history-content').innerHTML = "<p style='text-align:center;'>No logs.</p>"; return; }
         
         let dailyVol = 0;
+        let dayWeight = "--";
+
         const content = filtered.map(h => {
+            if (h.bodyWeight) dayWeight = h.bodyWeight; // Capture body weight if it exists
+            
             let detail = "";
             if (h.exercise.includes("CARDIO")) {
                 let hrInfo = h.heartRate ? ` | HR: ${h.heartRate}` : "";
@@ -266,7 +269,13 @@
             return `<div style="border-bottom:1px solid #333; padding:10px 0;"><b>${h.exercise}</b><br>${detail}</div>`;
         }).join('');
 
-        document.getElementById('history-content').innerHTML = `<div style="color:var(--accent); font-weight:bold; margin-bottom:10px;">Total Daily Volume: ${dailyVol.toLocaleString()} lbs</div>` + content;
+        const headerHtml = `
+            <div style="background:var(--input-bg); padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid #444;">
+                <div style="color:var(--accent); font-weight:bold;">Total Volume: ${dailyVol.toLocaleString()} lbs</div>
+                <div style="color:#8e8e93; font-size:0.8rem; margin-top:4px;">Recorded Body Weight: <span style="color:white;">${dayWeight} lbs</span></div>
+            </div>`;
+
+        document.getElementById('history-content').innerHTML = headerHtml + content;
     }
 
     datePicker.addEventListener('change', updateUI);
