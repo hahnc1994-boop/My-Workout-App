@@ -69,9 +69,10 @@
         <div class="achieve-card"><span id="pb-squat" class="achieve-val">--</span><span id="ratio-squat" class="ratio-tag">--</span><span class="achieve-label">Back Squat Max</span></div>
     </div>
 
-    <div class="achieve-card" style="width:100%; box-sizing:border-box; display:grid; grid-template-columns:1fr 1fr;">
-        <div><span id="stat-miles" class="achieve-val">0</span><span class="achieve-label">Total Miles</span></div>
-        <div><span id="stat-days" class="achieve-val">0</span><span class="achieve-label">Days Logged</span></div>
+    <div class="achieve-card" style="width:100%; box-sizing:border-box; display:grid; grid-template-columns:1fr 1fr 1fr; gap: 5px;">
+        <div><span id="stat-miles" class="achieve-val" style="font-size: 1rem;">0</span><span class="achieve-label">Miles</span></div>
+        <div><span id="stat-days" class="achieve-val" style="font-size: 1rem;">0</span><span class="achieve-label">Days</span></div>
+        <div><span id="stat-volume" class="achieve-val" style="font-size: 1rem; color: var(--accent);">0</span><span class="achieve-label">Tonnage (Lbs)</span></div>
     </div>
 </div>
 
@@ -219,9 +220,15 @@
         }
 
         let miles = 0;
-        thisYearData.forEach(h => { if(h.distance) miles += parseFloat(h.distance); });
+        let totalVolume = 0;
+        thisYearData.forEach(h => { 
+            if(h.distance) miles += parseFloat(h.distance); 
+            // Calculate volume for the dashboard summary
+            if(h.weight && h.reps) totalVolume += (parseFloat(h.weight) * parseFloat(h.reps));
+        });
         document.getElementById('stat-miles').innerText = miles.toFixed(1);
         document.getElementById('stat-days').innerText = [...new Set(thisYearData.map(h => h.date.split('T')[0]))].length;
+        document.getElementById('stat-volume').innerText = totalVolume.toLocaleString();
 
         const lastWeight = parseFloat(document.getElementById('weight-avg').innerText) || 1;
         const setPB = (id, ratioId, name) => {
@@ -245,16 +252,21 @@
         const filtered = fullHistoryData.filter(h => h.date.split('T')[0] === selectedDate);
         if (filtered.length === 0) { document.getElementById('history-content').innerHTML = "<p style='text-align:center;'>No logs.</p>"; return; }
         
-        document.getElementById('history-content').innerHTML = filtered.map(h => {
+        let dailyVol = 0;
+        const content = filtered.map(h => {
             let detail = "";
             if (h.exercise.includes("CARDIO")) {
                 let hrInfo = h.heartRate ? ` | HR: ${h.heartRate}` : "";
                 detail = `${h.distance || 0} mi / ${h.duration || 0}${hrInfo}`;
             } else {
-                detail = (h.weight || 0) + ' lbs x ' + (h.reps || 0);
+                const vol = (h.weight || 0) * (h.reps || 0);
+                dailyVol += vol;
+                detail = `${h.weight || 0} lbs x ${h.reps || 0} (Vol: ${vol})`;
             }
             return `<div style="border-bottom:1px solid #333; padding:10px 0;"><b>${h.exercise}</b><br>${detail}</div>`;
         }).join('');
+
+        document.getElementById('history-content').innerHTML = `<div style="color:var(--accent); font-weight:bold; margin-bottom:10px;">Total Daily Volume: ${dailyVol.toLocaleString()} lbs</div>` + content;
     }
 
     datePicker.addEventListener('change', updateUI);
