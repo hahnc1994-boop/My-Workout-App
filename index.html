@@ -27,6 +27,7 @@
         .heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 15px 0; }
         .heat-cell { aspect-ratio: 1; background: #333; border-radius: 2px; }
         .heat-active { background: var(--accent); box-shadow: 0 0 5px var(--accent); }
+        .remove-card { position: absolute; right: 10px; top: 10px; color: #ff453a; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -83,6 +84,8 @@
 <script>
     const splitNames = ["Sunday: Vol Legs", "Monday: Vol Back", "Tuesday: Vol Chest", "Wed: Rest", "Thursday: Heavy Legs", "Friday: Heavy Back", "Saturday: Heavy Chest"];
     const mainLifts = ["Front Squat", "Light Deadlift", "Incline Bench", "", "Back Squat", "Deadlift", "Bench Press"];
+    
+    // IMPORTANT: PASTE YOUR GOOGLE WEB APP URL BETWEEN THE QUOTES BELOW
     const url = "https://script.google.com/macros/s/AKfycbygcgrTFkyiJKUjB2xKnMDQILdD8rIwHSqMtpO1kaY6OFLX4PCvqpSdfx81jXVswWko/exec"; 
     
     let fullHistoryData = [];
@@ -216,7 +219,7 @@
         const setPB = (id, ratioId, name) => {
             let max = 0;
             thisYearData.filter(h => h.exercise.toLowerCase().includes(name.toLowerCase())).forEach(h => {
-                const orm = Math.round(h.weight * (36 / (37 - h.reps)));
+                const orm = Math.round(h.weight * (1 + (h.reps / 30)));
                 if (orm > max) max = orm;
             });
             document.getElementById(id).innerText = max > 0 ? max : "--";
@@ -233,9 +236,16 @@
         const selectedDate = document.getElementById('history-calendar').value;
         const filtered = fullHistoryData.filter(h => h.date.split('T')[0] === selectedDate);
         if (filtered.length === 0) { document.getElementById('history-content').innerHTML = "<p style='text-align:center;'>No logs.</p>"; return; }
-        document.getElementById('history-content').innerHTML = filtered.map(h => `
-            <div style="border-bottom:1px solid #333; padding:10px 0;"><b>${h.exercise}</b><br>${h.weight ? h.weight+'x'+h.reps : 'Cardio'}</div>
-        `).join('');
+        
+        document.getElementById('history-content').innerHTML = filtered.map(h => {
+            let detail = "";
+            if (h.exercise.includes("CARDIO")) {
+                detail = (h.distance || 0) + " miles / " + (h.duration || 0) + " mins";
+            } else {
+                detail = (h.weight || 0) + ' lbs x ' + (h.reps || 0);
+            }
+            return `<div style="border-bottom:1px solid #333; padding:10px 0;"><b>${h.exercise}</b><br>${detail}</div>`;
+        }).join('');
     }
 
     datePicker.addEventListener('change', updateUI);
