@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gym Track Pro Elite V15</title>
+    <title>Gym Track Pro Elite V16</title>
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --primary: #0a84ff; --text: #ffffff; --accent: #32d74b; --input-bg: #2c2c2e; --cardio: #ff9f0a; --gold: #ffd700; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; padding-bottom: 120px; }
@@ -248,6 +248,22 @@
         loadSpecificDay();
     }
 
+    // New helper to fix Google Sheets Time Format issues
+    function parseDurationToSeconds(val) {
+        if (!val) return 0;
+        // If Google sends a decimal (fraction of a day)
+        if (typeof val === 'number') {
+            return Math.round(val * 86400);
+        }
+        // If it's a string like "12:34" or "1:05:00"
+        if (typeof val === 'string' && val.includes(':')) {
+            const parts = val.split(':').map(Number);
+            if (parts.length === 2) return (parts[0] * 60) + parts[1];
+            if (parts.length === 3) return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+        }
+        return 0;
+    }
+
     function toggleAchieve() {
         closePanels();
         document.getElementById('achieve-panel').classList.add('open');
@@ -269,17 +285,9 @@
             if(h.distance && !isNaN(h.distance)) miles += parseFloat(h.distance); 
             if(h.calories && !isNaN(h.calories)) totalCals += parseFloat(h.calories);
             
-            // Safer Time Logic
-            if(h.duration && typeof h.duration === 'string' && h.duration.includes(':')) {
-                const parts = h.duration.split(':').map(Number);
-                if(parts.every(p => !isNaN(p))) {
-                    if(parts.length === 2) { // MM:SS
-                        totalSeconds += (parts[0] * 60) + parts[1];
-                    } else if(parts.length === 3) { // HH:MM:SS
-                        totalSeconds += (parts[0] * 3600) + (parts[1] * 60) + parts[2];
-                    }
-                }
-            }
+            // Apply robust time parser
+            totalSeconds += parseDurationToSeconds(h.duration);
+
             if(h.weight && h.reps && !isNaN(h.weight) && !isNaN(h.reps)) totalVolume += (parseFloat(h.weight) * parseFloat(h.reps));
         });
 
@@ -327,7 +335,15 @@
                 let hrInfo = h.heartRate ? ` | ${h.heartRate} BPM` : "";
                 let calInfo = h.calories ? ` | ${h.calories} Cal` : "";
                 let cNotes = h.notes ? `<br><span style="color:#8e8e93; font-style:italic; font-size:0.75rem;">"${h.notes}"</span>` : "";
-                detail = `${h.distance || 0} mi / ${h.duration || 0}${hrInfo}${calInfo}${cNotes}`;
+                // Format the duration specifically for the history display
+                let displayDur = h.duration;
+                if (typeof h.duration === 'number') {
+                    let totalS = Math.round(h.duration * 86400);
+                    let m = Math.floor(totalS / 60);
+                    let s = totalS % 60;
+                    displayDur = `${m}:${s < 10 ? '0' : ''}${s}`;
+                }
+                detail = `${h.distance || 0} mi / ${displayDur || 0}${hrInfo}${calInfo}${cNotes}`;
             } else {
                 const vol = (h.weight || 0) * (h.reps || 0);
                 dailyVol += vol;
