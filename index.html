@@ -5,62 +5,148 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gym Track Pro Elite V11</title>
     <style>
-        :root { --bg: #000000; --card: #1c1c1e; --primary: #0a84ff; --text: #ffffff; --accent: #32d74b; --input-bg: #2c2c2e; --cardio: #ff9f0a; --gold: #ffd700; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; padding-bottom: 120px; }
-        .header { background: var(--bg); position: sticky; top: 0; z-index: 10; padding-bottom: 10px; border-bottom: 1px solid #333; }
-        .top-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .stat-box { display: flex; flex-direction: column; }
-        .stat-label { font-size: 0.6rem; color: #8e8e93; text-transform: uppercase; margin-bottom: 4px; }
-        .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid var(--primary); position: relative; }
+        :root { 
+            --bg: radial-gradient(circle at top, #1c1c1e 0%, #000000 100%); 
+            --card: rgba(28, 28, 30, 0.7); 
+            --primary: #0a84ff; 
+            --text: #ffffff; 
+            --accent: #32d74b; 
+            --input-bg: rgba(44, 44, 46, 0.8); 
+            --cardio: #ff9f0a; 
+            --gold: #ffd700; 
+            --glass: blur(10px);
+        }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background: var(--bg); 
+            background-attachment: fixed;
+            color: var(--text); 
+            padding: 15px; 
+            margin: 0; 
+            padding-bottom: 120px; 
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .header { 
+            background: rgba(0,0,0,0.8); 
+            backdrop-filter: var(--glass);
+            position: sticky; 
+            top: 0; 
+            z-index: 10; 
+            padding-bottom: 10px; 
+            border-bottom: 1px solid rgba(255,255,255,0.1); 
+        }
+
+        .card { 
+            background: var(--card); 
+            backdrop-filter: var(--glass);
+            padding: 18px; 
+            border-radius: 16px; 
+            margin-bottom: 15px; 
+            border-left: 5px solid var(--primary); 
+            border-top: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            position: relative; 
+        }
+
         .card.cardio { border-left-color: var(--cardio); }
-        .set-row { display: grid; grid-template-columns: 0.5fr 1.5fr 1.5fr 0.5fr; gap: 10px; margin-bottom: 10px; align-items: center; }
-        input, textarea { background: var(--input-bg); border: none; color: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; width: 100%; box-sizing: border-box; }
-        .btn-add-ex { background: #1c1c1e; color: var(--text); border: 2px dashed #444; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; margin-bottom: 10px; }
-        .save-footer { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.95); padding: 15px; display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 10px; border-top: 1px solid #333; z-index: 20; }
-        .panel { position: fixed; top: 100%; left: 0; width: 100%; height: 90%; background: #1c1c1e; transition: top 0.3s ease; z-index: 100; overflow-y: auto; padding: 20px; box-sizing: border-box; border-radius: 20px 20px 0 0; }
-        .panel.open { top: 10%; }
-        .achieve-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-        .achieve-card { background: #2c2c2e; padding: 12px; border-radius: 12px; text-align: center; border: 1px solid #444; }
-        .achieve-val { font-size: 1.3rem; font-weight: bold; color: var(--gold); display: block; }
-        .achieve-label { font-size: 0.6rem; color: #8e8e93; text-transform: uppercase; margin-top: 4px; display: block; }
-        .ratio-tag { font-size: 0.7rem; color: var(--accent); font-weight: bold; margin-top: 2px; display: block; }
-        .heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 15px 0; }
-        .heat-cell { aspect-ratio: 1; background: #333; border-radius: 2px; }
-        .heat-active { background: var(--accent); box-shadow: 0 0 5px var(--accent); }
-        .remove-card { position: absolute; right: 10px; top: 10px; color: #ff453a; font-weight: bold; cursor: pointer; }
-        .top-set-badge { background: var(--gold); color: black; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 8px; vertical-align: middle; }
+
+        input, textarea { 
+            background: var(--input-bg); 
+            border: 1px solid rgba(255,255,255,0.1); 
+            color: white; 
+            padding: 12px; 
+            border-radius: 10px; 
+            font-size: 0.95rem; 
+            width: 100%; 
+            box-sizing: border-box; 
+            transition: border 0.3s;
+        }
+        
+        input:focus { border: 1px solid var(--primary); outline: none; }
+
+        .btn-add-ex { 
+            background: rgba(255,255,255,0.05); 
+            color: var(--text); 
+            border: 1px dashed rgba(255,255,255,0.3); 
+            padding: 15px; 
+            border-radius: 12px; 
+            width: 100%; 
+            font-weight: 600; 
+            margin-bottom: 10px; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .save-footer { 
+            position: fixed; bottom: 0; left: 0; right: 0; 
+            background: rgba(10, 10, 10, 0.9); 
+            backdrop-filter: var(--glass);
+            padding: 20px 15px; 
+            display: grid; grid-template-columns: 1fr 1fr 2.5fr; gap: 12px; 
+            border-top: 1px solid rgba(255,255,255,0.1); 
+            z-index: 20; 
+        }
+
+        .panel { 
+            position: fixed; top: 100%; left: 0; width: 100%; height: 90%; 
+            background: #121212; 
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+            z-index: 100; overflow-y: auto; padding: 25px; 
+            box-sizing: border-box; border-radius: 25px 25px 0 0; 
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .panel.open { transform: translateY(-90%); }
+
+        .top-set-badge { 
+            background: linear-gradient(135deg, var(--gold), #ff9500);
+            color: black; 
+            font-size: 0.65rem; padding: 3px 8px; 
+            border-radius: 6px; font-weight: 800; 
+            margin-left: 10px; 
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+        }
+
+        /* Heatmap Styling */
+        .heat-cell { aspect-ratio: 1; background: rgba(255,255,255,0.05); border-radius: 3px; }
+        .heat-active { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+
+        #save-btn {
+            box-shadow: 0 4px 15px rgba(50, 215, 75, 0.3);
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
-
 <div class="header">
     <div class="top-stats">
         <div class="stat-box"><span class="stat-label">Date</span><input type="date" id="date-picker"></div>
         <div class="stat-box"><span class="stat-label">Weight</span><input type="number" id="body-weight" placeholder="Lbs"></div>
-        <div class="stat-box"><span class="stat-label">7D Avg</span><div id="weight-avg" style="color: var(--accent); font-weight: bold; padding: 10px; background: var(--input-bg); border-radius: 8px; text-align: center;">--</div></div>
+        <div class="stat-box"><span class="stat-label">7D Avg</span><div id="weight-avg" style="color: var(--accent); font-weight: bold; padding: 12px; background: var(--input-bg); border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">--</div></div>
     </div>
-    <div id="workout-label" style="font-size: 0.8rem; color: var(--accent); margin-top: 10px; font-weight: bold;"></div>
+    <div id="workout-label" style="font-size: 0.85rem; color: var(--accent); margin-top: 12px; font-weight: 700; letter-spacing: 0.5px;"></div>
 </div>
 
 <div id="exercise-list" style="margin-top: 20px;"></div>
 <button class="btn-add-ex" onclick="addExercise()">+ Add Lifting</button>
-<button class="btn-add-ex" style="color: var(--cardio); border-color: var(--cardio);" onclick="addCardio()">+ Add Cardio</button>
+<button class="btn-add-ex" style="color: var(--cardio); border-color: rgba(255, 159, 10, 0.3);" onclick="addCardio()">+ Add Cardio</button>
 
 <datalist id="exercise-options"></datalist>
 
 <div id="history-panel" class="panel">
-    <span style="color: var(--primary); font-weight: bold; float: right;" onclick="closePanels()">CLOSE</span>
-    <h2 style="color: var(--primary); margin: 0 0 10px 0;">History</h2>
-    <input type="date" id="history-calendar" style="background:var(--primary); color:white; padding:10px; border-radius:8px; width:100%; border:none; margin-bottom:15px;" onchange="loadSpecificDay()">
+    <span style="color: var(--primary); font-weight: bold; float: right; padding: 5px;" onclick="closePanels()">CLOSE</span>
+    <h2 style="color: var(--primary); margin: 0 0 20px 0; font-size: 1.8rem;">History</h2>
+    <input type="date" id="history-calendar" style="background:var(--primary); color:white; padding:12px; border-radius:12px; width:100%; border:none; margin-bottom:20px; font-weight: bold;" onchange="loadSpecificDay()">
     <div id="history-content">Loading...</div>
 </div>
 
 <div id="achieve-panel" class="panel">
-    <span style="color: var(--gold); font-weight: bold; float: right;" onclick="closePanels()">CLOSE</span>
-    <h2 style="color: var(--gold); margin: 0;">Elite Dashboard</h2>
-    <p style="font-size: 0.7rem; color: #8e8e93; margin-bottom: 20px;">Performance & Consistency</p>
+    <span style="color: var(--gold); font-weight: bold; float: right; padding: 5px;" onclick="closePanels()">CLOSE</span>
+    <h2 style="color: var(--gold); margin: 0; font-size: 1.8rem;">Elite Dashboard</h2>
+    <p style="font-size: 0.75rem; color: #8e8e93; margin-bottom: 25px; letter-spacing: 1px;">PERFORMANCE METRICS</p>
 
-    <span class="stat-label">30-Day Activity Heatmap</span>
+    <span class="stat-label" style="margin-bottom: 10px; display: block;">30-Day Activity Heatmap</span>
     <div id="heatmap" class="heatmap"></div>
 
     <div class="achieve-grid">
@@ -70,20 +156,22 @@
         <div class="achieve-card"><span id="pb-squat" class="achieve-val">--</span><span id="ratio-squat" class="ratio-tag">--</span><span class="achieve-label">Back Squat Max</span></div>
     </div>
 
-    <div class="achieve-card" style="width:100%; box-sizing:border-box; display:grid; grid-template-columns:1fr 1fr 1fr; gap: 5px;">
-        <div><span id="stat-miles" class="achieve-val" style="font-size: 1rem;">0</span><span class="achieve-label">Miles</span></div>
-        <div><span id="stat-days" class="achieve-val" style="font-size: 1rem;">0</span><span class="achieve-label">Days</span></div>
-        <div><span id="stat-volume" class="achieve-val" style="font-size: 1rem; color: var(--accent);">0</span><span class="achieve-label">Tonnage (Lbs)</span></div>
+    <div class="achieve-card" style="width:100%; box-sizing:border-box; display:grid; grid-template-columns:1fr 1fr 1fr; gap: 10px; background: rgba(255,255,255,0.03);">
+        <div><span id="stat-miles" class="achieve-val" style="font-size: 1.1rem;">0</span><span class="achieve-label">Miles</span></div>
+        <div><span id="stat-days" class="achieve-val" style="font-size: 1.1rem;">0</span><span class="achieve-label">Days</span></div>
+        <div><span id="stat-volume" class="achieve-val" style="font-size: 1.1rem; color: var(--accent);">0</span><span class="achieve-label">Tonnage</span></div>
     </div>
 </div>
 
 <div class="save-footer">
-    <button onclick="toggleHistory()" style="background:#333; color:white; border:none; border-radius:10px; font-weight:bold; font-size: 0.7rem;">HISTORY</button>
-    <button onclick="toggleAchieve()" style="background:var(--gold); color:black; border:none; border-radius:10px; font-weight:bold; font-size: 0.7rem;">STATS</button>
-    <button id="save-btn" onclick="saveWorkout()" style="background:var(--accent); color:black; border:none; border-radius:10px; font-weight:bold;">SAVE ALL</button>
+    <button onclick="toggleHistory()" style="background:rgba(255,255,255,0.1); color:white; border:none; border-radius:12px; font-weight:700; font-size: 0.65rem;">HISTORY</button>
+    <button onclick="toggleAchieve()" style="background:var(--gold); color:black; border:none; border-radius:12px; font-weight:700; font-size: 0.65rem;">STATS</button>
+    <button id="save-btn" onclick="saveWorkout()" style="background:var(--accent); color:black; border:none; border-radius:12px; font-weight:800; text-transform: uppercase;">SAVE ALL</button>
 </div>
 
 <script>
+    // NOTE: Keep all your existing Javascript logic below! 
+    // Just ensure the 'url' variable is updated.
     const splitNames = ["Sunday: Vol Legs", "Monday: Vol Back", "Tuesday: Vol Chest", "Wed: Rest", "Thursday: Heavy Legs", "Friday: Heavy Back", "Saturday: Heavy Chest"];
     const mainLifts = ["Front Squat", "Light Deadlift", "Incline Bench", "", "Back Squat", "Deadlift", "Bench Press"];
     
@@ -126,10 +214,10 @@
         div.className = 'card';
         div.innerHTML = `
             <div class="remove-card" onclick="this.parentElement.remove()">✕</div>
-            <input type="text" class="exercise-name" list="exercise-options" value="${name}" style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1.1rem; width:85%;">
+            <input type="text" class="exercise-name" list="exercise-options" value="${name}" style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1.2rem; width:85%; padding:0; margin-bottom:10px;">
             <div class="set-container"></div>
-            <button onclick="addSet(this)" style="width:100%; background:#2c2c2e; color:var(--primary); border:none; padding:8px; border-radius:5px; margin-top:5px;">+ Set</button>
-            <textarea class="ex-notes" placeholder="Notes..." rows="2" style="margin-top:10px;"></textarea>`;
+            <button onclick="addSet(this)" style="width:100%; background:rgba(10, 132, 255, 0.1); color:var(--primary); border:none; padding:10px; border-radius:8px; margin-top:10px; font-weight:bold;">+ Add Set</button>
+            <textarea class="ex-notes" placeholder="Add session notes..." rows="2" style="margin-top:15px; font-size: 0.8rem;"></textarea>`;
         document.getElementById('exercise-list').appendChild(div);
         addSet(div.querySelector('button'));
     }
@@ -144,9 +232,9 @@
         }
         const row = document.createElement('div');
         row.className = 'set-row';
-        row.innerHTML = `<div style="font-weight:bold;">${container.children.length+1}</div>
+        row.innerHTML = `<div style="font-weight:bold; color:#8e8e93;">${container.children.length+1}</div>
             <input type="number" placeholder="Lbs" value="${lastW}"><input type="number" placeholder="Reps" value="${lastR}">
-            <div style="color:#ff453a;" onclick="this.parentElement.remove()">✕</div>`;
+            <div style="color:#ff453a; font-size: 1.2rem;" onclick="this.parentElement.remove()">✕</div>`;
         container.appendChild(row);
     }
 
@@ -155,8 +243,8 @@
         div.className = 'card cardio';
         div.innerHTML = `
             <div class="remove-card" onclick="this.parentElement.remove()">✕</div>
-            <div style="color:var(--cardio); font-weight:bold; margin-bottom:10px;">CARDIO</div>
-            <input type="text" class="cardio-type" placeholder="Type (Run, Row, etc)" list="exercise-options">
+            <div style="color:var(--cardio); font-weight:bold; margin-bottom:10px; letter-spacing:1px;">CARDIO SESSION</div>
+            <input type="text" class="cardio-type" placeholder="Exercise (Run, Row, etc)" list="exercise-options">
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
                 <input type="text" class="c-dur" placeholder="Time (MM:SS)">
                 <input type="number" class="c-dist" placeholder="Miles" step="0.1">
@@ -167,7 +255,8 @@
 
     async function saveWorkout() {
         const btn = document.getElementById('save-btn');
-        btn.innerText = "SAVING...";
+        const originalText = btn.innerText;
+        btn.innerText = "UPLOADING...";
         const allData = [];
         const date = datePicker.value;
         const bodyWeight = document.getElementById('body-weight').value;
@@ -190,8 +279,8 @@
             });
         });
         await fetch(url, {method: "POST", mode: "no-cors", body: JSON.stringify(allData)});
-        btn.innerText = "SAVED!";
-        setTimeout(() => { btn.innerText = "SAVE ALL"; }, 2000);
+        btn.innerText = "SUCCESS!";
+        setTimeout(() => { btn.innerText = originalText; }, 2000);
         init();
     }
 
@@ -250,13 +339,12 @@
     function loadSpecificDay() {
         const selectedDate = document.getElementById('history-calendar').value;
         const filtered = fullHistoryData.filter(h => h.date.split('T')[0] === selectedDate);
-        if (filtered.length === 0) { document.getElementById('history-content').innerHTML = "<p style='text-align:center;'>No logs.</p>"; return; }
+        if (filtered.length === 0) { document.getElementById('history-content').innerHTML = "<p style='text-align:center; color:#8e8e93; margin-top:50px;'>No logs for this date.</p>"; return; }
         
         let dailyVol = 0;
         let dayWeight = "--";
-
-        // Logic to find Top Set for each exercise
         const topSets = {};
+        
         filtered.forEach(h => {
             if(!h.exercise.includes("CARDIO") && h.weight) {
                 const w = parseFloat(h.weight);
@@ -269,32 +357,27 @@
 
         const content = filtered.map(h => {
             if (h.bodyWeight) dayWeight = h.bodyWeight;
-            
             let detail = "";
             let isTopSet = false;
-
             if (h.exercise.includes("CARDIO")) {
                 let hrInfo = h.heartRate ? ` | HR: ${h.heartRate}` : "";
-                detail = `${h.distance || 0} mi / ${h.duration || 0}${hrInfo}`;
+                detail = `<span style="color:var(--cardio);">${h.distance || 0} mi</span> / ${h.duration || 0}${hrInfo}`;
             } else {
                 const vol = (h.weight || 0) * (h.reps || 0);
                 dailyVol += vol;
-                
-                // Check if this specific row is the Top Set
                 if(topSets[h.exercise] && parseFloat(h.weight) === topSets[h.exercise].w && parseFloat(h.reps) === topSets[h.exercise].r) {
                     isTopSet = true;
-                    topSets[h.exercise] = {w: -1, r: -1}; // Prevents duplicate stars if you do the exact same top set twice
+                    topSets[h.exercise] = {w: -1, r: -1};
                 }
-                
-                detail = `${h.weight || 0} lbs x ${h.reps || 0} (Vol: ${vol})${isTopSet ? '<span class="top-set-badge">⭐ TOP</span>' : ''}`;
+                detail = `${h.weight || 0} lbs x ${h.reps || 0} <span style="color:#8e8e93; font-size:0.8rem;">(Vol: ${vol})</span> ${isTopSet ? '<span class="top-set-badge">⭐ TOP</span>' : ''}`;
             }
-            return `<div style="border-bottom:1px solid #333; padding:10px 0;"><b>${h.exercise}</b><br>${detail}</div>`;
+            return `<div style="border-bottom:1px solid rgba(255,255,255,0.05); padding:12px 0;"><b style="color:var(--primary); font-size:1rem;">${h.exercise}</b><br><div style="margin-top:5px;">${detail}</div></div>`;
         }).join('');
 
         const headerHtml = `
-            <div style="background:var(--input-bg); padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid #444;">
-                <div style="color:var(--accent); font-weight:bold;">Total Volume: ${dailyVol.toLocaleString()} lbs</div>
-                <div style="color:#8e8e93; font-size:0.8rem; margin-top:4px;">Recorded Body Weight: <span style="color:white;">${dayWeight} lbs</span></div>
+            <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:16px; margin-bottom:20px; border:1px solid rgba(255,255,255,0.1);">
+                <div style="color:var(--accent); font-weight:800; font-size:1.1rem;">${dailyVol.toLocaleString()} LBS MOVED</div>
+                <div style="color:#8e8e93; font-size:0.8rem; margin-top:6px; letter-spacing:1px;">BODY WEIGHT: <span style="color:white; font-weight:bold;">${dayWeight} LBS</span></div>
             </div>`;
 
         document.getElementById('history-content').innerHTML = headerHtml + content;
