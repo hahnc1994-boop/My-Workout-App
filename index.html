@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gym Track Pro Elite V17</title>
+    <title>Gym Track Pro Elite V19</title>
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --primary: #0a84ff; --text: #ffffff; --accent: #32d74b; --input-bg: #2c2c2e; --cardio: #ff9f0a; --gold: #ffd700; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; padding-bottom: 120px; }
@@ -35,6 +35,9 @@
         .calc-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
         .calc-box input { background: #1c1c1e; text-align: center; color: var(--gold); font-weight: bold; border: 1px solid #333; }
         .btn-calc { background: var(--gold); color: black; border: none; padding: 10px; border-radius: 8px; width: 100%; font-weight: bold; text-transform: uppercase; cursor: pointer; }
+        /* Triple Input UI */
+        .time-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 5px; }
+        .time-unit { font-size: 0.5rem; color: #8e8e93; text-align: center; display: block; margin-bottom: 2px; }
     </style>
 </head>
 <body>
@@ -66,7 +69,6 @@
     <h2 style="color: var(--gold); margin: 0;">Elite Dashboard</h2>
     <p style="font-size: 0.7rem; color: #8e8e93; margin-bottom: 20px;">Annual Progress Tracker</p>
 
-    <span class="stat-label">Target Calculator</span>
     <div class="calc-container">
         <div class="calc-inputs">
             <div class="calc-box"><span class="stat-label">1RM</span><input type="number" id="calc-max" placeholder="Max"></div>
@@ -134,12 +136,8 @@
     }
 
     function calculateMissing() {
-        let maxInput = document.getElementById('calc-max');
-        let wInput = document.getElementById('calc-weight');
-        let rInput = document.getElementById('calc-reps');
-        let max = parseFloat(maxInput.value);
-        let w = parseFloat(wInput.value);
-        let r = parseFloat(rInput.value);
+        let maxInput = document.getElementById('calc-max'), wInput = document.getElementById('calc-weight'), rInput = document.getElementById('calc-reps');
+        let max = parseFloat(maxInput.value), w = parseFloat(wInput.value), r = parseFloat(rInput.value);
         if (!max && w && r) maxInput.value = Math.round(w * (1 + r / 30));
         else if (!w && max && r) wInput.value = Math.round(max / (1 + r / 30));
         else if (!r && max && w) rInput.value = Math.round(30 * (max / w - 1));
@@ -199,8 +197,12 @@
             <div class="remove-card" onclick="this.parentElement.remove()">✕</div>
             <div style="color:var(--cardio); font-weight:bold; margin-bottom:10px;">CARDIO</div>
             <input type="text" class="cardio-type" placeholder="Type (Run, Row, etc)" list="exercise-options">
+            <div class="time-grid">
+                <div><span class="time-unit">HRS</span><input type="number" class="c-hh" placeholder="0"></div>
+                <div><span class="time-unit">MINS</span><input type="number" class="c-mm" placeholder="0"></div>
+                <div><span class="time-unit">SECS</span><input type="number" class="c-ss" placeholder="0"></div>
+            </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
-                <input type="text" class="c-dur" placeholder="Time (MM:SS or H:MM:SS)">
                 <input type="number" class="c-dist" placeholder="Miles" step="0.1">
                 <input type="number" class="c-hr" placeholder="Avg HR">
                 <input type="number" class="c-cal" placeholder="Calories">
@@ -215,6 +217,7 @@
         const allData = [];
         const date = datePicker.value;
         const bodyWeight = document.getElementById('body-weight').value;
+        
         document.querySelectorAll('.card:not(.cardio)').forEach(card => {
             const name = card.querySelector('.exercise-name').value;
             const notes = card.querySelector('.ex-notes').value;
@@ -223,10 +226,16 @@
                 if(ins[0].value) allData.push({date, exercise: name, set: i+1, weight: ins[0].value, reps: ins[1].value, notes: i === 0 ? notes : "", bodyWeight: i === 0 ? bodyWeight : ""});
             });
         });
+        
         document.querySelectorAll('.cardio').forEach(card => {
+            const h = parseInt(card.querySelector('.c-hh').value) || 0;
+            const m = parseInt(card.querySelector('.c-mm').value) || 0;
+            const s = parseInt(card.querySelector('.c-ss').value) || 0;
+            const durStr = `${h}:${m}:${s}`;
+            
             allData.push({
                 date, exercise: "CARDIO: " + (card.querySelector('.cardio-type').value || "Session"), 
-                duration: card.querySelector('.c-dur').value, distance: card.querySelector('.c-dist').value, 
+                duration: durStr, distance: card.querySelector('.c-dist').value, 
                 heartRate: card.querySelector('.c-hr').value, calories: card.querySelector('.c-cal').value,
                 notes: card.querySelector('.c-notes').value, bodyWeight: bodyWeight
             });
@@ -246,16 +255,12 @@
         loadSpecificDay();
     }
 
-    // Bulletproof Time Parser
     function parseDurationToSeconds(val) {
-        if (val === undefined || val === null || val === "" || val === " ") return 0;
+        if (!val) return 0;
         if (typeof val === 'number') return Math.round(val * 86400);
-        if (typeof val === 'string' && val.includes(':')) {
-            const parts = val.trim().split(':').map(Number);
-            if (parts.some(isNaN)) return 0;
-            if (parts.length === 2) return (parts[0] * 60) + parts[1];
-            if (parts.length === 3) return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
-        }
+        const parts = val.toString().split(':').map(Number);
+        if (parts.length === 3) return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+        if (parts.length === 2) return (parts[0] * 60) + parts[1];
         return 0;
     }
 
@@ -270,89 +275,58 @@
         const today = new Date();
         for(let i=29; i>=0; i--) {
             const d = new Date(); d.setDate(today.getDate() - i);
-            const dStr = d.toISOString().split('T')[0];
-            const active = fullHistoryData.some(h => h.date && h.date.split('T')[0] === dStr);
+            const active = fullHistoryData.some(h => h.date && h.date.split('T')[0] === d.toISOString().split('T')[0]);
             heatmap.innerHTML += `<div class="heat-cell ${active ? 'heat-active' : ''}"></div>`;
         }
 
-        let miles = 0, totalVolume = 0, totalCals = 0, totalSeconds = 0;
+        let miles = 0, totalVol = 0, totalCals = 0, totalS = 0;
         thisYearData.forEach(h => { 
-            let cDist = parseFloat(h.distance); if(!isNaN(cDist)) miles += cDist; 
-            let cCal = parseFloat(h.calories); if(!isNaN(cCal)) totalCals += cCal;
-            totalSeconds += parseDurationToSeconds(h.duration);
-            let w = parseFloat(h.weight), r = parseFloat(h.reps);
-            if(!isNaN(w) && !isNaN(r)) totalVolume += (w * r);
+            miles += parseFloat(h.distance) || 0; 
+            totalCals += parseFloat(h.calories) || 0;
+            totalS += parseDurationToSeconds(h.duration);
+            totalVol += (parseFloat(h.weight) || 0) * (parseFloat(h.reps) || 0);
         });
 
-        const hrs = Math.floor(totalSeconds / 3600);
-        const mins = Math.floor((totalSeconds % 3600) / 60);
-        const secs = totalSeconds % 60;
-        document.getElementById('year-time').innerText = `${hrs}h ${mins}m ${secs}s`;
+        document.getElementById('year-time').innerText = `${Math.floor(totalS/3600)}h ${Math.floor((totalS%3600)/60)}m ${totalS%60}s`;
         document.getElementById('year-cals').innerText = Math.round(totalCals).toLocaleString();
         document.getElementById('stat-miles').innerText = miles.toFixed(1);
         document.getElementById('stat-days').innerText = [...new Set(thisYearData.map(h => h.date ? h.date.split('T')[0] : ""))].filter(String).length;
-        document.getElementById('stat-volume').innerText = totalVolume.toLocaleString();
+        document.getElementById('stat-volume').innerText = totalVol.toLocaleString();
 
         const lastWeight = parseFloat(document.getElementById('weight-avg').innerText) || 1;
-        const setPB = (id, ratioId, name) => {
-            let max = 0;
+        const setPB = (id, rid, name) => {
+            let m = 0;
             thisYearData.filter(h => h.exercise && h.exercise.toLowerCase().includes(name.toLowerCase())).forEach(h => {
-                let w = parseFloat(h.weight), r = parseFloat(h.reps);
-                if(!isNaN(w) && !isNaN(r)) {
-                    const orm = Math.round(w * (1 + (r / 30)));
-                    if (orm > max) max = orm;
-                }
+                let orm = Math.round(parseFloat(h.weight) * (1 + (parseFloat(h.reps) / 30)));
+                if (orm > m) m = orm;
             });
-            document.getElementById(id).innerText = max > 0 ? max : "--";
-            document.getElementById(ratioId).innerText = max > 0 ? (max / lastWeight).toFixed(2) + "x" : "--";
+            document.getElementById(id).innerText = m > 0 ? m : "--";
+            document.getElementById(rid).innerText = m > 0 ? (m / lastWeight).toFixed(2) + "x" : "--";
         };
-        setPB("pb-bench", "ratio-bench", "Bench Press");
-        setPB("pb-dead", "ratio-dead", "Deadlift");
-        setPB("pb-incline", "ratio-incline", "Incline Bench");
-        setPB("pb-squat", "ratio-squat", "Back Squat");
+        setPB("pb-bench", "ratio-bench", "Bench Press"); setPB("pb-dead", "ratio-dead", "Deadlift");
+        setPB("pb-incline", "ratio-incline", "Incline Bench"); setPB("pb-squat", "ratio-squat", "Back Squat");
     }
 
     function loadSpecificDay() {
-        const selectedDate = document.getElementById('history-calendar').value;
-        const filtered = fullHistoryData.filter(h => h.date && h.date.split('T')[0] === selectedDate);
+        const sel = document.getElementById('history-calendar').value;
+        const filtered = fullHistoryData.filter(h => h.date && h.date.split('T')[0] === sel);
         if (filtered.length === 0) { document.getElementById('history-content').innerHTML = "<p style='text-align:center;'>No logs.</p>"; return; }
-        let dailyVol = 0, dayWeight = "--";
-        const topSets = {};
-        filtered.forEach(h => {
-            if(h.exercise && !h.exercise.includes("CARDIO") && h.weight) {
-                const w = parseFloat(h.weight), r = parseFloat(h.reps);
-                if (!topSets[h.exercise] || w > topSets[h.exercise].w || (w === topSets[h.exercise].w && r > topSets[h.exercise].r)) topSets[h.exercise] = {w, r};
-            }
-        });
+        let dVol = 0, dW = "--";
         const content = filtered.map(h => {
-            if (h.bodyWeight) dayWeight = h.bodyWeight;
+            if (h.bodyWeight) dW = h.bodyWeight;
             let detail = "";
             if (h.exercise && h.exercise.includes("CARDIO")) {
-                let hrInfo = h.heartRate ? ` | ${h.heartRate} BPM` : "";
-                let calInfo = h.calories ? ` | ${h.calories} Cal` : "";
-                let cNotes = h.notes ? `<br><span style="color:#8e8e93; font-style:italic; font-size:0.75rem;">"${h.notes}"</span>` : "";
-                let displayDur = h.duration;
-                if (typeof h.duration === 'number') {
-                    let totalS = Math.round(h.duration * 86400);
-                    let m = Math.floor(totalS / 60);
-                    let s = totalS % 60;
-                    displayDur = `${m}:${s < 10 ? '0' : ''}${s}`;
-                }
-                detail = `${h.distance || 0} mi / ${displayDur || 0}${hrInfo}${calInfo}${cNotes}`;
+                let d = h.duration;
+                if (typeof d === 'number') { let s = Math.round(d * 86400); d = `${Math.floor(s/60)}:${s%60 < 10 ? '0' : ''}${s%60}`; }
+                detail = `${h.distance || 0} mi / ${d || 0} | ${h.calories || 0} Cal`;
             } else {
-                const vol = (parseFloat(h.weight) || 0) * (parseFloat(h.reps) || 0);
-                dailyVol += vol;
-                let isTop = (h.exercise && topSets[h.exercise] && parseFloat(h.weight) === topSets[h.exercise].w && parseFloat(h.reps) === topSets[h.exercise].r);
-                if(isTop) topSets[h.exercise] = {w: -1, r: -1};
-                detail = `${h.weight || 0} lbs x ${h.reps || 0} (Vol: ${vol})${isTop ? '<span class="top-set-badge">⭐ TOP</span>' : ''}`;
+                const v = (parseFloat(h.weight) || 0) * (parseFloat(h.reps) || 0);
+                dVol += v;
+                detail = `${h.weight || 0} lbs x ${h.reps || 0} (Vol: ${v})`;
             }
             return `<div style="border-bottom:1px solid #333; padding:10px 0;"><b>${h.exercise || "Unknown"}</b><br>${detail}</div>`;
         }).join('');
-        document.getElementById('history-content').innerHTML = `
-            <div style="background:var(--input-bg); padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid #444;">
-                <div style="color:var(--accent); font-weight:bold;">Total Volume: ${dailyVol.toLocaleString()} lbs</div>
-                <div style="color:#8e8e93; font-size:0.8rem; margin-top:4px;">Body Weight: <span style="color:white;">${dayWeight} lbs</span></div>
-            </div>` + content;
+        document.getElementById('history-content').innerHTML = `<div style="background:var(--input-bg); padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid #444;"><b>Vol: ${dVol.toLocaleString()} lbs | BW: ${dW} lbs</b></div>` + content;
     }
     datePicker.addEventListener('change', updateUI);
     init();
