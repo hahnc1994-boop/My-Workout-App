@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gym Track Pro Elite V16</title>
+    <title>Gym Track Pro Elite V17</title>
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --primary: #0a84ff; --text: #ffffff; --accent: #32d74b; --input-bg: #2c2c2e; --cardio: #ff9f0a; --gold: #ffd700; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; padding-bottom: 120px; }
@@ -29,10 +29,8 @@
         .heat-active { background: var(--accent); box-shadow: 0 0 5px var(--accent); }
         .remove-card { position: absolute; right: 10px; top: 10px; color: #ff453a; font-weight: bold; cursor: pointer; }
         .top-set-badge { background: var(--gold); color: black; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 8px; vertical-align: middle; }
-        
         .total-banner { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
         .total-box { background: #000; border: 1px solid #333; padding: 15px; border-radius: 12px; text-align: center; }
-        
         .calc-container { background: #000; padding: 12px; border-radius: 10px; border: 1px solid #444; margin-bottom: 20px; }
         .calc-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
         .calc-box input { background: #1c1c1e; text-align: center; color: var(--gold); font-weight: bold; border: 1px solid #333; }
@@ -151,7 +149,7 @@
     function calculateWeightAvg() {
         const uniqueDayWeights = {};
         fullHistoryData.forEach(h => { if(h.bodyWeight) uniqueDayWeights[h.date.split('T')[0]] = parseFloat(h.bodyWeight); });
-        const weights = Object.values(uniqueDayWeights).slice(-7);
+        const weights = Object.values(uniqueDayWeights).slice(-7).filter(w => !isNaN(w));
         if(weights.length > 0) {
             const avg = weights.reduce((a, b) => a + b, 0) / weights.length;
             document.getElementById('weight-avg').innerText = avg.toFixed(1);
@@ -248,16 +246,13 @@
         loadSpecificDay();
     }
 
-    // New helper to fix Google Sheets Time Format issues
+    // Bulletproof Time Parser
     function parseDurationToSeconds(val) {
-        if (!val) return 0;
-        // If Google sends a decimal (fraction of a day)
-        if (typeof val === 'number') {
-            return Math.round(val * 86400);
-        }
-        // If it's a string like "12:34" or "1:05:00"
+        if (val === undefined || val === null || val === "" || val === " ") return 0;
+        if (typeof val === 'number') return Math.round(val * 86400);
         if (typeof val === 'string' && val.includes(':')) {
-            const parts = val.split(':').map(Number);
+            const parts = val.trim().split(':').map(Number);
+            if (parts.some(isNaN)) return 0;
             if (parts.length === 2) return (parts[0] * 60) + parts[1];
             if (parts.length === 3) return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
         }
@@ -282,13 +277,11 @@
 
         let miles = 0, totalVolume = 0, totalCals = 0, totalSeconds = 0;
         thisYearData.forEach(h => { 
-            if(h.distance && !isNaN(h.distance)) miles += parseFloat(h.distance); 
-            if(h.calories && !isNaN(h.calories)) totalCals += parseFloat(h.calories);
-            
-            // Apply robust time parser
+            let cDist = parseFloat(h.distance); if(!isNaN(cDist)) miles += cDist; 
+            let cCal = parseFloat(h.calories); if(!isNaN(cCal)) totalCals += cCal;
             totalSeconds += parseDurationToSeconds(h.duration);
-
-            if(h.weight && h.reps && !isNaN(h.weight) && !isNaN(h.reps)) totalVolume += (parseFloat(h.weight) * parseFloat(h.reps));
+            let w = parseFloat(h.weight), r = parseFloat(h.reps);
+            if(!isNaN(w) && !isNaN(r)) totalVolume += (w * r);
         });
 
         const hrs = Math.floor(totalSeconds / 3600);
@@ -304,8 +297,11 @@
         const setPB = (id, ratioId, name) => {
             let max = 0;
             thisYearData.filter(h => h.exercise && h.exercise.toLowerCase().includes(name.toLowerCase())).forEach(h => {
-                const orm = Math.round(h.weight * (1 + (h.reps / 30)));
-                if (orm > max) max = orm;
+                let w = parseFloat(h.weight), r = parseFloat(h.reps);
+                if(!isNaN(w) && !isNaN(r)) {
+                    const orm = Math.round(w * (1 + (r / 30)));
+                    if (orm > max) max = orm;
+                }
             });
             document.getElementById(id).innerText = max > 0 ? max : "--";
             document.getElementById(ratioId).innerText = max > 0 ? (max / lastWeight).toFixed(2) + "x" : "--";
@@ -335,7 +331,6 @@
                 let hrInfo = h.heartRate ? ` | ${h.heartRate} BPM` : "";
                 let calInfo = h.calories ? ` | ${h.calories} Cal` : "";
                 let cNotes = h.notes ? `<br><span style="color:#8e8e93; font-style:italic; font-size:0.75rem;">"${h.notes}"</span>` : "";
-                // Format the duration specifically for the history display
                 let displayDur = h.duration;
                 if (typeof h.duration === 'number') {
                     let totalS = Math.round(h.duration * 86400);
@@ -345,7 +340,7 @@
                 }
                 detail = `${h.distance || 0} mi / ${displayDur || 0}${hrInfo}${calInfo}${cNotes}`;
             } else {
-                const vol = (h.weight || 0) * (h.reps || 0);
+                const vol = (parseFloat(h.weight) || 0) * (parseFloat(h.reps) || 0);
                 dailyVol += vol;
                 let isTop = (h.exercise && topSets[h.exercise] && parseFloat(h.weight) === topSets[h.exercise].w && parseFloat(h.reps) === topSets[h.exercise].r);
                 if(isTop) topSets[h.exercise] = {w: -1, r: -1};
