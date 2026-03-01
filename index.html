@@ -30,9 +30,11 @@
         .remove-card { position: absolute; right: 10px; top: 10px; color: #ff453a; font-weight: bold; cursor: pointer; }
         .top-set-badge { background: var(--gold); color: black; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 8px; vertical-align: middle; }
         
-        /* New Calculator Style */
-        .calc-container { background: #000; padding: 12px; border-radius: 10px; border: 1px solid #444; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-        .calc-box input { background: #1c1c1e; text-align: center; color: var(--gold); font-weight: bold; }
+        /* Calculator Polish */
+        .calc-container { background: #000; padding: 12px; border-radius: 10px; border: 1px solid #444; margin-bottom: 20px; }
+        .calc-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .calc-box input { background: #1c1c1e; text-align: center; color: var(--gold); font-weight: bold; border: 1px solid #333; }
+        .btn-calc { background: var(--gold); color: black; border: none; padding: 10px; border-radius: 8px; width: 100%; font-weight: bold; text-transform: uppercase; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -64,11 +66,14 @@
     <h2 style="color: var(--gold); margin: 0;">Elite Dashboard</h2>
     <p style="font-size: 0.7rem; color: #8e8e93; margin-bottom: 20px;">Performance & Consistency</p>
 
-    <span class="stat-label">Target Calculator (Fill any 2)</span>
+    <span class="stat-label">Target Calculator</span>
     <div class="calc-container">
-        <div class="calc-box"><span class="stat-label">1RM</span><input type="number" id="calc-max" oninput="runCalc('max')" placeholder="Max"></div>
-        <div class="calc-box"><span class="stat-label">Weight</span><input type="number" id="calc-weight" oninput="runCalc('weight')" placeholder="Lbs"></div>
-        <div class="calc-box"><span class="stat-label">Reps</span><input type="number" id="calc-reps" oninput="runCalc('reps')" placeholder="Reps"></div>
+        <div class="calc-inputs">
+            <div class="calc-box"><span class="stat-label">1RM</span><input type="number" id="calc-max" placeholder="Max"></div>
+            <div class="calc-box"><span class="stat-label">Weight</span><input type="number" id="calc-weight" placeholder="Lbs"></div>
+            <div class="calc-box"><span class="stat-label">Reps</span><input type="number" id="calc-reps" placeholder="Reps"></div>
+        </div>
+        <button class="btn-calc" onclick="calculateMissing()">Calculate</button>
     </div>
 
     <span class="stat-label">30-Day Activity Heatmap</span>
@@ -115,17 +120,31 @@
         } catch(e) { console.log("Init fail", e); }
     }
 
-    // New Calculator Logic
-    function runCalc(changed) {
-        let max = document.getElementById('calc-max');
-        let w = document.getElementById('calc-weight');
-        let r = document.getElementById('calc-reps');
+    // New Priority Calculation Logic
+    function calculateMissing() {
+        let maxInput = document.getElementById('calc-max');
+        let wInput = document.getElementById('calc-weight');
+        let rInput = document.getElementById('calc-reps');
 
-        if (changed === 'weight' || changed === 'reps') {
-            if (w.value && r.value) max.value = Math.round(w.value * (1 + r.value / 30));
-        } else if (changed === 'max') {
-            if (max.value && r.value) w.value = Math.round(max.value / (1 + r.value / 30));
-            else if (max.value && w.value) r.value = Math.round(30 * (max.value / w.value - 1));
+        let max = parseFloat(maxInput.value);
+        let w = parseFloat(wInput.value);
+        let r = parseFloat(rInput.value);
+
+        // Case 1: Solve for Max
+        if (!max && w && r) {
+            maxInput.value = Math.round(w * (1 + r / 30));
+        } 
+        // Case 2: Solve for Weight
+        else if (!w && max && r) {
+            wInput.value = Math.round(max / (1 + r / 30));
+        }
+        // Case 3: Solve for Reps
+        else if (!r && max && w) {
+            rInput.value = Math.round(30 * (max / w - 1));
+        }
+        // Case 4: Default to recalculating Max if everything is full
+        else if (w && r) {
+            maxInput.value = Math.round(w * (1 + r / 30));
         }
     }
 
