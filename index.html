@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gym Track Pro Elite V12</title>
+    <title>Gym Track Pro Elite V13</title>
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --primary: #0a84ff; --text: #ffffff; --accent: #32d74b; --input-bg: #2c2c2e; --cardio: #ff9f0a; --gold: #ffd700; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; padding-bottom: 120px; }
@@ -30,11 +30,10 @@
         .remove-card { position: absolute; right: 10px; top: 10px; color: #ff453a; font-weight: bold; cursor: pointer; }
         .top-set-badge { background: var(--gold); color: black; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 8px; vertical-align: middle; }
         
-        /* New Cardio Chart Styles */
-        .chart-container { display: flex; align-items: flex-end; gap: 10px; height: 100px; padding: 10px; background: #000; border-radius: 10px; margin-bottom: 20px; border: 1px solid #333; }
-        .chart-bar { flex: 1; background: var(--cardio); border-radius: 4px 4px 0 0; transition: height 0.5s ease; position: relative; }
-        .chart-label { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 0.5rem; color: white; }
-
+        /* Dashboard Styling */
+        .total-banner { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .total-box { background: #000; border: 1px solid #333; padding: 15px; border-radius: 12px; text-align: center; }
+        
         .calc-container { background: #000; padding: 12px; border-radius: 10px; border: 1px solid #444; margin-bottom: 20px; }
         .calc-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
         .calc-box input { background: #1c1c1e; text-align: center; color: var(--gold); font-weight: bold; border: 1px solid #333; }
@@ -68,10 +67,28 @@
 <div id="achieve-panel" class="panel">
     <span style="color: var(--gold); font-weight: bold; float: right;" onclick="closePanels()">CLOSE</span>
     <h2 style="color: var(--gold); margin: 0;">Elite Dashboard</h2>
-    <p style="font-size: 0.7rem; color: #8e8e93; margin-bottom: 20px;">Performance & Consistency</p>
+    <p style="font-size: 0.7rem; color: #8e8e93; margin-bottom: 20px;">Annual Progress Tracker</p>
 
-    <span class="stat-label">Calorie Burn Trend (Last 7 Sessions)</span>
-    <div id="cardio-chart" class="chart-container"></div>
+    <span class="stat-label">Target Calculator</span>
+    <div class="calc-container">
+        <div class="calc-inputs">
+            <div class="calc-box"><span class="stat-label">1RM</span><input type="number" id="calc-max" placeholder="Max"></div>
+            <div class="calc-box"><span class="stat-label">Weight</span><input type="number" id="calc-weight" placeholder="Lbs"></div>
+            <div class="calc-box"><span class="stat-label">Reps</span><input type="number" id="calc-reps" placeholder="Reps"></div>
+        </div>
+        <button class="btn-calc" onclick="calculateMissing()">Calculate</button>
+    </div>
+
+    <div class="total-banner">
+        <div class="total-box">
+            <span id="year-time" class="achieve-val" style="color: var(--cardio);">0h 0m</span>
+            <span class="achieve-label">Total Year Time</span>
+        </div>
+        <div class="total-box">
+            <span id="year-cals" class="achieve-val" style="color: #ff453a;">0</span>
+            <span class="achieve-label">Yearly Calories</span>
+        </div>
+    </div>
 
     <span class="stat-label">30-Day Activity Heatmap</span>
     <div id="heatmap" class="heatmap"></div>
@@ -83,21 +100,10 @@
         <div class="achieve-card"><span id="pb-squat" class="achieve-val">--</span><span id="ratio-squat" class="ratio-tag">--</span><span class="achieve-label">Back Squat Max</span></div>
     </div>
 
-    <div class="achieve-card" style="width:100%; box-sizing:border-box; display:grid; grid-template-columns:repeat(4, 1fr); gap: 5px;">
-        <div><span id="stat-miles" class="achieve-val" style="font-size: 0.8rem;">0</span><span class="achieve-label">Miles</span></div>
-        <div><span id="stat-cals" class="achieve-val" style="font-size: 0.8rem; color: var(--cardio);">0</span><span class="achieve-label">Cals</span></div>
-        <div><span id="stat-days" class="achieve-val" style="font-size: 0.8rem;">0</span><span class="achieve-label">Days</span></div>
-        <div><span id="stat-volume" class="achieve-val" style="font-size: 0.8rem; color: var(--accent);">0</span><span class="achieve-label">Lbs</span></div>
-    </div>
-
-    <span class="stat-label" style="margin-top:20px; display:block;">Target Calculator</span>
-    <div class="calc-container">
-        <div class="calc-inputs">
-            <div class="calc-box"><span class="stat-label">1RM</span><input type="number" id="calc-max" placeholder="Max"></div>
-            <div class="calc-box"><span class="stat-label">Weight</span><input type="number" id="calc-weight" placeholder="Lbs"></div>
-            <div class="calc-box"><span class="stat-label">Reps</span><input type="number" id="calc-reps" placeholder="Reps"></div>
-        </div>
-        <button class="btn-calc" onclick="calculateMissing()">Calculate</button>
+    <div class="achieve-card" style="width:100%; box-sizing:border-box; display:grid; grid-template-columns:repeat(3, 1fr); gap: 5px;">
+        <div><span id="stat-miles" class="achieve-val" style="font-size: 0.9rem;">0</span><span class="achieve-label">Miles</span></div>
+        <div><span id="stat-days" class="achieve-val" style="font-size: 0.9rem;">0</span><span class="achieve-label">Days Trained</span></div>
+        <div><span id="stat-volume" class="achieve-val" style="font-size: 0.9rem; color: var(--accent);">0</span><span class="achieve-label">Total Lbs</span></div>
     </div>
 </div>
 
@@ -260,33 +266,27 @@
             heatmap.innerHTML += `<div class="heat-cell ${active ? 'heat-active' : ''}"></div>`;
         }
 
-        // Stats & Charts
-        let miles = 0, totalVolume = 0, totalCals = 0;
-        let cardioTrends = [];
+        let miles = 0, totalVolume = 0, totalCals = 0, totalSeconds = 0;
         thisYearData.forEach(h => { 
             if(h.distance) miles += parseFloat(h.distance); 
-            if(h.calories) {
-                totalCals += parseFloat(h.calories);
-                cardioTrends.push(parseFloat(h.calories));
+            if(h.calories) totalCals += parseFloat(h.calories);
+            if(h.duration && h.duration.includes(':')) {
+                const parts = h.duration.split(':');
+                totalSeconds += (parseInt(parts[0]) * 60) + parseInt(parts[1]);
             }
             if(h.weight && h.reps) totalVolume += (parseFloat(h.weight) * parseFloat(h.reps));
         });
 
+        // Format Time
+        const h = Math.floor(totalSeconds / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        document.getElementById('year-time').innerText = `${h}h ${m}m`;
+        document.getElementById('year-cals').innerText = Math.round(totalCals).toLocaleString();
+
         // Update Stats Bar
         document.getElementById('stat-miles').innerText = miles.toFixed(1);
-        document.getElementById('stat-cals').innerText = Math.round(totalCals).toLocaleString();
         document.getElementById('stat-days').innerText = [...new Set(thisYearData.map(h => h.date.split('T')[0]))].length;
         document.getElementById('stat-volume').innerText = totalVolume.toLocaleString();
-
-        // Build Cardio Chart (Last 7)
-        const chart = document.getElementById('cardio-chart');
-        chart.innerHTML = "";
-        const last7Cals = cardioTrends.slice(-7);
-        const maxCal = Math.max(...last7Cals, 100);
-        last7Cals.forEach(c => {
-            const height = (c / maxCal) * 100;
-            chart.innerHTML += `<div class="chart-bar" style="height:${height}%"><span class="chart-label">${c}</span></div>`;
-        });
 
         // PB Ratios
         const lastWeight = parseFloat(document.getElementById('weight-avg').innerText) || 1;
