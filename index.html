@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gym Track Pro Elite V12</title>
+    <title>Gym Track Pro Elite V12.1</title>
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --primary: #0a84ff; --text: #ffffff; --accent: #32d74b; --input-bg: #2c2c2e; --cardio: #ff9f0a; --gold: #ffd700; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; padding-bottom: 120px; }
@@ -87,7 +87,7 @@
     <div class="achieve-card" style="width:100%; box-sizing:border-box; display:grid; grid-template-columns:1fr 1fr 1fr; gap: 5px;">
         <div><span id="stat-miles" class="achieve-val" style="font-size: 1rem;">0</span><span class="achieve-label">Miles</span></div>
         <div><span id="stat-days" class="achieve-val" style="font-size: 1rem;">0</span><span class="achieve-label">Days</span></div>
-        <div><span id="stat-volume" class="achieve-val" style="font-size: 1rem; color: var(--accent);">0</span><span class="achieve-label">Tonnage (Lbs)</span></div>
+        <div><span id="stat-volume" class="achieve-val" style="font-size: 1rem; color: var(--accent);">0</span><span class="achieve-label">Tonnage</span></div>
     </div>
 </div>
 
@@ -122,12 +122,11 @@
         if (!max && w && r) maxInput.value = Math.round(w * (1 + r / 30));
         else if (!w && max && r) wInput.value = Math.round(max / (1 + r / 30));
         else if (!r && max && w) rInput.value = Math.round(30 * (max / w - 1));
-        else if (w && r) maxInput.value = Math.round(w * (1 + r / 30));
     }
 
     function calculateWeightAvg() {
         const uniqueDayWeights = {};
-        fullHistoryData.forEach(h => { if(h.bodyWeight) uniqueDayWeights[h.date.split('T')[0]] = parseFloat(h.bodyWeight); });
+        fullHistoryData.forEach(h => { if(h.BodyWeight || h.bodyWeight) uniqueDayWeights[h.Date.split('T')[0]] = parseFloat(h.BodyWeight || h.bodyWeight); });
         const weights = Object.values(uniqueDayWeights).slice(-7);
         if(weights.length > 0) {
             const avg = weights.reduce((a, b) => a + b, 0) / weights.length;
@@ -221,44 +220,50 @@
     }
 
     function closePanels() { document.querySelectorAll('.panel').forEach(p => p.classList.remove('open')); }
+
     function toggleHistory() {
         closePanels();
         document.getElementById('history-panel').classList.add('open');
         document.getElementById('history-calendar').value = datePicker.value;
         loadSpecificDay();
     }
+
     function toggleAchieve() {
         closePanels();
         document.getElementById('achieve-panel').classList.add('open');
         const currentYear = new Date().getFullYear();
-        const thisYearData = fullHistoryData.filter(h => h.date.startsWith(currentYear.toString()));
+        const thisYearData = fullHistoryData.filter(h => h.Date && h.Date.startsWith(currentYear.toString()));
+        
         const heatmap = document.getElementById('heatmap');
         heatmap.innerHTML = "";
         const today = new Date();
         for(let i=29; i>=0; i--) {
             const d = new Date(); d.setDate(today.getDate() - i);
             const dStr = d.toISOString().split('T')[0];
-            const active = fullHistoryData.some(h => h.date.split('T')[0] === dStr);
+            const active = fullHistoryData.some(h => h.Date && h.Date.split('T')[0] === dStr);
             heatmap.innerHTML += `<div class="heat-cell ${active ? 'heat-active' : ''}"></div>`;
         }
+
         let miles = 0, totalVolume = 0;
         thisYearData.forEach(h => { 
-            if(h.distance) miles += parseFloat(h.distance); 
-            if(h.weight && h.reps) totalVolume += (parseFloat(h.weight) * parseFloat(h.reps));
+            if(h.Distance) miles += parseFloat(h.Distance); 
+            if(h.Weight && h.Reps) totalVolume += (parseFloat(h.Weight) * parseFloat(h.Reps));
         });
         document.getElementById('stat-miles').innerText = miles.toFixed(1);
-        document.getElementById('stat-days').innerText = [...new Set(thisYearData.map(h => h.date.split('T')[0]))].length;
+        document.getElementById('stat-days').innerText = [...new Set(thisYearData.map(h => h.Date.split('T')[0]))].length;
         document.getElementById('stat-volume').innerText = totalVolume.toLocaleString();
+
         const lastWeight = parseFloat(document.getElementById('weight-avg').innerText) || 1;
         const setPB = (id, ratioId, name) => {
             let max = 0;
-            thisYearData.filter(h => h.exercise.toLowerCase().includes(name.toLowerCase())).forEach(h => {
-                const orm = Math.round(h.weight * (1 + (h.reps / 30)));
+            thisYearData.filter(h => h.Exercise && h.Exercise.toLowerCase().includes(name.toLowerCase())).forEach(h => {
+                const orm = Math.round(h.Weight * (1 + (h.Reps / 30)));
                 if (orm > max) max = orm;
             });
             document.getElementById(id).innerText = max > 0 ? max : "--";
             document.getElementById(ratioId).innerText = max > 0 ? (max / lastWeight).toFixed(2) + "x BW" : "--";
         };
+
         setPB("pb-bench", "ratio-bench", "Bench Press");
         setPB("pb-dead", "ratio-dead", "Deadlift");
         setPB("pb-incline", "ratio-incline", "Incline Bench");
@@ -267,45 +272,45 @@
 
     function loadSpecificDay() {
         const selectedDate = document.getElementById('history-calendar').value;
-        const filtered = fullHistoryData.filter(h => h.date.split('T')[0] === selectedDate);
+        const filtered = fullHistoryData.filter(h => h.Date && h.Date.split('T')[0] === selectedDate);
         if (filtered.length === 0) { document.getElementById('history-content').innerHTML = "<p style='text-align:center;'>No logs.</p>"; return; }
+        
         let dailyVol = 0, dayWeight = "--";
         const topSets = {};
+        
         filtered.forEach(h => {
-            if(!h.exercise.includes("CARDIO") && h.weight) {
-                const w = parseFloat(h.weight), r = parseFloat(h.reps);
-                if (!topSets[h.exercise] || w > topSets[h.exercise].w || (w === topSets[h.exercise].w && r > topSets[h.exercise].r)) {
-                    topSets[h.exercise] = {w, r};
+            if(h.Exercise && !h.Exercise.includes("CARDIO") && h.Weight) {
+                const w = parseFloat(h.Weight), r = parseFloat(h.Reps);
+                if (!topSets[h.Exercise] || w > topSets[h.Exercise].w || (w === topSets[h.Exercise].w && r > topSets[h.Exercise].r)) {
+                    topSets[h.Exercise] = {w, r};
                 }
             }
         });
+
         const content = filtered.map(h => {
-            if (h.bodyWeight) dayWeight = h.bodyWeight;
+            if (h.BodyWeight || h.bodyWeight) dayWeight = h.BodyWeight || h.bodyWeight;
             let detail = "";
-            let isTopSet = false;
-            if (h.exercise.includes("CARDIO")) {
-                let hrInfo = h.heartRate ? ` | HR: ${h.heartRate}` : "";
-                let calInfo = h.calories ? ` | Cal: ${h.calories}` : "";
-                let noteInfo = h.notes ? `<div style="color:#8e8e93; font-size:0.75rem; margin-top:4px;">Note: ${h.notes}</div>` : "";
-                detail = `${h.distance || 0} mi / ${h.duration || 0}${hrInfo}${calInfo}${noteInfo}`;
+            if (h.Exercise && h.Exercise.includes("CARDIO")) {
+                let hrInfo = h.HeartRate ? ` | HR: ${h.HeartRate}` : "";
+                let calInfo = h.Calories ? ` | Cal: ${h.Calories}` : "";
+                let noteInfo = h.Notes ? `<div style="color:#8e8e93; font-size:0.75rem; margin-top:4px;">Note: ${h.Notes}</div>` : "";
+                detail = `${h.Distance || 0} mi / ${h.Duration || 0}${hrInfo}${calInfo}${noteInfo}`;
             } else {
-                const vol = (h.weight || 0) * (h.reps || 0);
+                const vol = (h.Weight || 0) * (h.Reps || 0);
                 dailyVol += vol;
-                if(topSets[h.exercise] && parseFloat(h.weight) === topSets[h.exercise].w && parseFloat(h.reps) === topSets[h.exercise].r) {
+                let isTopSet = false;
+                if(topSets[h.Exercise] && parseFloat(h.Weight) === topSets[h.Exercise].w && parseFloat(h.Reps) === topSets[h.Exercise].r) {
                     isTopSet = true;
-                    topSets[h.exercise] = {w: -1, r: -1};
+                    topSets[h.Exercise] = {w: -1, r: -1};
                 }
-                detail = `${h.weight || 0} lbs x ${h.reps || 0} (Vol: ${vol})${isTopSet ? '<span class="top-set-badge">⭐ TOP</span>' : ''}`;
+                detail = `${h.Weight || 0} lbs x ${h.Reps || 0} (Vol: ${vol})${isTopSet ? '<span class="top-set-badge">⭐ TOP</span>' : ''}`;
             }
-            return `<div style="border-bottom:1px solid #333; padding:10px 0;"><b>${h.exercise}</b><br>${detail}</div>`;
+            return `<div style="border-bottom:1px solid #333; padding:10px 0;"><b>${h.Exercise}</b><br>${detail}</div>`;
         }).join('');
-        const headerHtml = `
-            <div style="background:var(--input-bg); padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid #444;">
-                <div style="color:var(--accent); font-weight:bold;">Total Volume: ${dailyVol.toLocaleString()} lbs</div>
-                <div style="color:#8e8e93; font-size:0.8rem; margin-top:4px;">Recorded Body Weight: <span style="color:white;">${dayWeight} lbs</span></div>
-            </div>`;
-        document.getElementById('history-content').innerHTML = headerHtml + content;
+
+        document.getElementById('history-content').innerHTML = `<div style="background:#2c2c2e; padding:10px; border-radius:8px; margin-bottom:10px;"><div style="color:var(--accent); font-weight:bold;">Volume: ${dailyVol.toLocaleString()} lbs</div><div style="font-size:0.7rem; color:#8e8e93;">Body Weight: ${dayWeight} lbs</div></div>` + content;
     }
+
     datePicker.addEventListener('change', updateUI);
     init();
 </script>
