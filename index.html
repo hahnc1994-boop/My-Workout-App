@@ -30,7 +30,6 @@
         .remove-card { position: absolute; right: 10px; top: 10px; color: #ff453a; font-weight: bold; cursor: pointer; }
         .top-set-badge { background: var(--gold); color: black; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 8px; vertical-align: middle; }
         
-        /* Calculator Polish */
         .calc-container { background: #000; padding: 12px; border-radius: 10px; border: 1px solid #444; margin-bottom: 20px; }
         .calc-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
         .calc-box input { background: #1c1c1e; text-align: center; color: var(--gold); font-weight: bold; border: 1px solid #333; }
@@ -103,7 +102,9 @@
     const splitNames = ["Sunday: Vol Legs", "Monday: Vol Back", "Tuesday: Vol Chest", "Wed: Rest", "Thursday: Heavy Legs", "Friday: Heavy Back", "Saturday: Heavy Chest"];
     const mainLifts = ["Front Squat", "Light Deadlift", "Incline Bench", "", "Back Squat", "Deadlift", "Bench Press"];
     
+    // --- INSERT YOUR URL BELOW ---
     const url = "https://script.google.com/macros/s/AKfycbygcgrTFkyiJKUjB2xKnMDQILdD8rIwHSqMtpO1kaY6OFLX4PCvqpSdfx81jXVswWko/exec"; 
+    // ------------------------------
     
     let fullHistoryData = [];
     const datePicker = document.getElementById('date-picker');
@@ -120,32 +121,18 @@
         } catch(e) { console.log("Init fail", e); }
     }
 
-    // New Priority Calculation Logic
     function calculateMissing() {
         let maxInput = document.getElementById('calc-max');
         let wInput = document.getElementById('calc-weight');
         let rInput = document.getElementById('calc-reps');
-
         let max = parseFloat(maxInput.value);
         let w = parseFloat(wInput.value);
         let r = parseFloat(rInput.value);
 
-        // Case 1: Solve for Max
-        if (!max && w && r) {
-            maxInput.value = Math.round(w * (1 + r / 30));
-        } 
-        // Case 2: Solve for Weight
-        else if (!w && max && r) {
-            wInput.value = Math.round(max / (1 + r / 30));
-        }
-        // Case 3: Solve for Reps
-        else if (!r && max && w) {
-            rInput.value = Math.round(30 * (max / w - 1));
-        }
-        // Case 4: Default to recalculating Max if everything is full
-        else if (w && r) {
-            maxInput.value = Math.round(w * (1 + r / 30));
-        }
+        if (!max && w && r) maxInput.value = Math.round(w * (1 + r / 30));
+        else if (!w && max && r) wInput.value = Math.round(max / (1 + r / 30));
+        else if (!r && max && w) rInput.value = Math.round(30 * (max / w - 1));
+        else if (w && r) maxInput.value = Math.round(w * (1 + r / 30));
     }
 
     function calculateWeightAvg() {
@@ -204,8 +191,10 @@
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
                 <input type="text" class="c-dur" placeholder="Time (MM:SS)">
                 <input type="number" class="c-dist" placeholder="Miles" step="0.1">
-                <input type="number" class="c-hr" placeholder="Avg HR" style="grid-column: span 2;">
-            </div>`;
+                <input type="number" class="c-hr" placeholder="Avg HR">
+                <input type="number" class="c-cal" placeholder="Calories">
+            </div>
+            <textarea class="c-notes" placeholder="Cardio Notes..." rows="2" style="margin-top:10px;"></textarea>`;
         document.getElementById('exercise-list').appendChild(div);
     }
 
@@ -215,6 +204,7 @@
         const allData = [];
         const date = datePicker.value;
         const bodyWeight = document.getElementById('body-weight').value;
+        
         document.querySelectorAll('.card:not(.cardio)').forEach(card => {
             const name = card.querySelector('.exercise-name').value;
             const notes = card.querySelector('.ex-notes').value;
@@ -223,6 +213,7 @@
                 if(ins[0].value) allData.push({date, exercise: name, set: i+1, weight: ins[0].value, reps: ins[1].value, notes: i === 0 ? notes : "", bodyWeight: i === 0 ? bodyWeight : ""});
             });
         });
+        
         document.querySelectorAll('.cardio').forEach(card => {
             allData.push({
                 date, 
@@ -230,9 +221,12 @@
                 duration: card.querySelector('.c-dur').value, 
                 distance: card.querySelector('.c-dist').value, 
                 heartRate: card.querySelector('.c-hr').value,
+                calories: card.querySelector('.c-cal').value,
+                notes: card.querySelector('.c-notes').value,
                 bodyWeight: bodyWeight
             });
         });
+        
         await fetch(url, {method: "POST", mode: "no-cors", body: JSON.stringify(allData)});
         btn.innerText = "SAVED!";
         setTimeout(() => { btn.innerText = "SAVE ALL"; }, 2000);
@@ -316,7 +310,9 @@
             let isTopSet = false;
             if (h.exercise.includes("CARDIO")) {
                 let hrInfo = h.heartRate ? ` | HR: ${h.heartRate}` : "";
-                detail = `${h.distance || 0} mi / ${h.duration || 0}${hrInfo}`;
+                let calInfo = h.calories ? ` | Cal: ${h.calories}` : "";
+                let cardNotes = h.notes ? `<br><small style="color:#8e8e93;">${h.notes}</small>` : "";
+                detail = `${h.distance || 0} mi / ${h.duration || 0}${hrInfo}${calInfo}${cardNotes}`;
             } else {
                 const vol = (h.weight || 0) * (h.reps || 0);
                 dailyVol += vol;
@@ -343,4 +339,3 @@
 </script>
 </body>
 </html>
-
