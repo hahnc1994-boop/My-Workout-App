@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gym Track Pro Elite V20</title>
+    <title>Gym Track Pro Elite V21</title>
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --primary: #0a84ff; --text: #ffffff; --accent: #32d74b; --input-bg: #2c2c2e; --cardio: #ff9f0a; --gold: #ffd700; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; padding-bottom: 120px; }
@@ -28,7 +28,6 @@
         .heat-cell { aspect-ratio: 1; background: #333; border-radius: 2px; }
         .heat-active { background: var(--accent); box-shadow: 0 0 5px var(--accent); }
         .remove-card { position: absolute; right: 10px; top: 10px; color: #ff453a; font-weight: bold; cursor: pointer; }
-        .top-set-badge { background: var(--gold); color: black; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 8px; vertical-align: middle; }
         .total-banner { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
         .total-box { background: #000; border: 1px solid #333; padding: 15px; border-radius: 12px; text-align: center; }
         .calc-container { background: #000; padding: 12px; border-radius: 10px; border: 1px solid #444; margin-bottom: 20px; }
@@ -79,11 +78,11 @@
 
     <div class="total-banner">
         <div class="total-box">
-            <span id="year-time" class="achieve-val" style="color: var(--cardio); font-size: 1.1rem;">0h 0m 0s</span>
-            <span class="achieve-label">Total Year Time</span>
+            <span id="cardio-count" class="achieve-val" style="color: var(--cardio); font-size: 1.5rem;">0</span>
+            <span class="achieve-label">Cardio Sessions</span>
         </div>
         <div class="total-box">
-            <span id="year-cals" class="achieve-val" style="color: #ff453a; font-size: 1.1rem;">0</span>
+            <span id="year-cals" class="achieve-val" style="color: #ff453a; font-size: 1.5rem;">0</span>
             <span class="achieve-label">Yearly Calories</span>
         </div>
     </div>
@@ -114,8 +113,6 @@
 <script>
     const splitNames = ["Sunday: Vol Legs", "Monday: Vol Back", "Tuesday: Vol Chest", "Wed: Rest", "Thursday: Heavy Legs", "Friday: Heavy Back", "Saturday: Heavy Chest"];
     const mainLifts = ["Front Squat", "Light Deadlift", "Incline Bench", "", "Back Squat", "Deadlift", "Bench Press"];
-    
-    // --- INSERT YOUR URL BELOW ---
     const url = "https://script.google.com/macros/s/AKfycbygcgrTFkyiJKUjB2xKnMDQILdD8rIwHSqMtpO1kaY6OFLX4PCvqpSdfx81jXVswWko/exec"; 
     
     let fullHistoryData = [];
@@ -134,11 +131,11 @@
     }
 
     function calculateMissing() {
-        let maxInput = document.getElementById('calc-max'), wInput = document.getElementById('calc-weight'), rInput = document.getElementById('calc-reps');
-        let max = parseFloat(maxInput.value), w = parseFloat(wInput.value), r = parseFloat(rInput.value);
-        if (!max && w && r) maxInput.value = Math.round(w * (1 + r / 30));
-        else if (!w && max && r) wInput.value = Math.round(max / (1 + r / 30));
-        else if (!r && max && w) rInput.value = Math.round(30 * (max / w - 1));
+        let mx = document.getElementById('calc-max'), w = document.getElementById('calc-weight'), r = document.getElementById('calc-reps');
+        let mVal = parseFloat(mx.value), wVal = parseFloat(w.value), rVal = parseFloat(r.value);
+        if (!mVal && wVal && rVal) mx.value = Math.round(wVal * (1 + rVal / 30));
+        else if (!wVal && mVal && rVal) w.value = Math.round(mVal / (1 + rVal / 30));
+        else if (!rVal && mVal && wVal) r.value = Math.round(30 * (mVal / wVal - 1));
     }
 
     function calculateWeightAvg() {
@@ -161,8 +158,7 @@
     function addExercise(name = "") {
         const div = document.createElement('div');
         div.className = 'card';
-        div.innerHTML = `
-            <div class="remove-card" onclick="this.parentElement.remove()">✕</div>
+        div.innerHTML = `<div class="remove-card" onclick="this.parentElement.remove()">✕</div>
             <input type="text" class="exercise-name" list="exercise-options" value="${name}" style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1.1rem; width:85%;">
             <div class="set-container"></div>
             <button onclick="addSet(this)" style="width:100%; background:#2c2c2e; color:var(--primary); border:none; padding:8px; border-radius:5px; margin-top:5px;">+ Set</button>
@@ -190,8 +186,7 @@
     function addCardio() {
         const div = document.createElement('div');
         div.className = 'card cardio';
-        div.innerHTML = `
-            <div class="remove-card" onclick="this.parentElement.remove()">✕</div>
+        div.innerHTML = `<div class="remove-card" onclick="this.parentElement.remove()">✕</div>
             <div style="color:var(--cardio); font-weight:bold; margin-bottom:10px;">CARDIO</div>
             <input type="text" class="cardio-type" placeholder="Type (Run, Row, etc)" list="exercise-options">
             <div class="time-grid">
@@ -228,11 +223,9 @@
             const h = parseInt(card.querySelector('.c-hh').value) || 0;
             const m = parseInt(card.querySelector('.c-mm').value) || 0;
             const s = parseInt(card.querySelector('.c-ss').value) || 0;
-            const durStr = `${h}:${m}:${s}`;
-            
             allData.push({
                 date, exercise: "CARDIO: " + (card.querySelector('.cardio-type').value || "Session"), 
-                duration: durStr, distance: card.querySelector('.c-dist').value, 
+                duration: `${h}:${m}:${s}`, distance: card.querySelector('.c-dist').value, 
                 heartRate: card.querySelector('.c-hr').value, calories: card.querySelector('.c-cal').value,
                 notes: card.querySelector('.c-notes').value, bodyWeight: bodyWeight
             });
@@ -251,26 +244,6 @@
         loadSpecificDay();
     }
 
-    function parseDurationToSeconds(val) {
-        if (!val) return 0;
-        try {
-            // Case 1: Google duration number (decimal of a day)
-            if (typeof val === 'number') return Math.round(val * 86400);
-            
-            // Case 2: String H:M:S
-            let str = val.toString().trim();
-            if (str.includes(':')) {
-                let parts = str.split(':').map(p => {
-                    let n = parseInt(p);
-                    return isNaN(n) ? 0 : n;
-                });
-                if (parts.length === 3) return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
-                if (parts.length === 2) return (parts[0] * 60) + parts[1];
-            }
-            return 0;
-        } catch(e) { return 0; }
-    }
-
     function toggleAchieve() {
         closePanels();
         document.getElementById('achieve-panel').classList.add('open');
@@ -286,19 +259,16 @@
             heatmap.innerHTML += `<div class="heat-cell ${active ? 'heat-active' : ''}"></div>`;
         }
 
-        let miles = 0, totalVol = 0, totalCals = 0, totalS = 0;
+        let miles = 0, totalVol = 0, totalCals = 0, cardioCount = 0;
         thisYearData.forEach(h => { 
             let d = parseFloat(h.distance); if(!isNaN(d)) miles += d; 
             let c = parseFloat(h.calories); if(!isNaN(c)) totalCals += c;
-            totalS += parseDurationToSeconds(h.duration);
+            if(h.exercise && h.exercise.includes("CARDIO")) cardioCount++;
             let w = parseFloat(h.weight), r = parseFloat(h.reps);
             if(!isNaN(w) && !isNaN(r)) totalVol += (w * r);
         });
 
-        const hr = Math.floor(totalS / 3600);
-        const mn = Math.floor((totalS % 3600) / 60);
-        const sc = totalS % 60;
-        document.getElementById('year-time').innerText = `${hr}h ${mn}m ${sc}s`;
+        document.getElementById('cardio-count').innerText = cardioCount;
         document.getElementById('year-cals').innerText = Math.round(totalCals).toLocaleString();
         document.getElementById('stat-miles').innerText = miles.toFixed(1);
         document.getElementById('stat-days').innerText = [...new Set(thisYearData.map(h => h.date ? h.date.split('T')[0] : ""))].filter(String).length;
@@ -330,9 +300,7 @@
             if (h.bodyWeight) dW = h.bodyWeight;
             let detail = "";
             if (h.exercise && h.exercise.includes("CARDIO")) {
-                let d = h.duration;
-                if (typeof d === 'number') { let s = Math.round(d * 86400); d = `${Math.floor(s/60)}:${s%60 < 10 ? '0' : ''}${s%60}`; }
-                detail = `${h.distance || 0} mi / ${d || 0} | ${h.calories || 0} Cal`;
+                detail = `${h.distance || 0} mi / ${h.duration || "0:0:0"} | ${h.calories || 0} Cal`;
             } else {
                 let w = parseFloat(h.weight) || 0, r = parseFloat(h.reps) || 0;
                 dVol += (w * r);
