@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gym Track Pro Elite V22</title>
+    <title>Gym Track Pro Elite V23</title>
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --primary: #0a84ff; --text: #ffffff; --accent: #32d74b; --input-bg: #2c2c2e; --cardio: #ff9f0a; --gold: #ffd700; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; padding-bottom: 120px; }
@@ -24,9 +24,14 @@
         .achieve-val { font-size: 1.3rem; font-weight: bold; color: var(--gold); display: block; }
         .achieve-label { font-size: 0.6rem; color: #8e8e93; text-transform: uppercase; margin-top: 4px; display: block; }
         .ratio-tag { font-size: 0.7rem; color: var(--accent); font-weight: bold; margin-top: 2px; display: block; }
-        .heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 15px 0; }
-        .heat-cell { aspect-ratio: 1; background: #333; border-radius: 2px; }
-        .heat-active { background: var(--accent); box-shadow: 0 0 5px var(--accent); }
+        
+        /* Calendar Heatmap Styling */
+        .heatmap-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-bottom: 5px; }
+        .day-name { font-size: 0.5rem; color: #8e8e93; font-weight: bold; }
+        .heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 5px 0 20px 0; }
+        .heat-cell { aspect-ratio: 1; background: #333; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #555; position: relative; }
+        .heat-active { background: var(--accent); color: black; font-weight: bold; box-shadow: 0 0 8px rgba(50, 215, 75, 0.4); border: none; }
+        
         .remove-card { position: absolute; right: 10px; top: 10px; color: #ff453a; font-weight: bold; cursor: pointer; }
         .total-banner { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
         .total-box { background: #000; border: 1px solid #333; padding: 15px; border-radius: 12px; text-align: center; }
@@ -36,7 +41,6 @@
         .btn-calc { background: var(--gold); color: black; border: none; padding: 10px; border-radius: 8px; width: 100%; font-weight: bold; text-transform: uppercase; cursor: pointer; }
         .time-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 5px; }
         .time-unit { font-size: 0.5rem; color: #8e8e93; text-align: center; display: block; margin-bottom: 2px; }
-        .top-set-star { color: var(--gold); font-size: 0.8rem; margin-left: 5px; }
     </style>
 </head>
 <body>
@@ -88,7 +92,10 @@
         </div>
     </div>
 
-    <span class="stat-label">30-Day Activity Heatmap</span>
+    <span class="stat-label">Activity Calendar (5 Weeks)</span>
+    <div class="heatmap-header">
+        <div class="day-name">SUN</div><div class="day-name">MON</div><div class="day-name">TUE</div><div class="day-name">WED</div><div class="day-name">THU</div><div class="day-name">FRI</div><div class="day-name">SAT</div>
+    </div>
     <div id="heatmap" class="heatmap"></div>
 
     <div class="achieve-grid">
@@ -248,19 +255,35 @@
     function toggleAchieve() {
         closePanels();
         document.getElementById('achieve-panel').classList.add('open');
-        const currentYear = new Date().getFullYear();
-        const thisYearData = (fullHistoryData || []).filter(h => h.date && h.date.startsWith(currentYear.toString()));
         
         const heatmap = document.getElementById('heatmap');
         heatmap.innerHTML = "";
+        
+        // --- Heatmap Calendar Logic ---
         const today = new Date();
-        for(let i=29; i>=0; i--) {
-            const d = new Date(); d.setDate(today.getDate() - i);
-            const active = fullHistoryData.some(h => h.date && h.date.split('T')[0] === d.toISOString().split('T')[0]);
-            heatmap.innerHTML += `<div class="heat-cell ${active ? 'heat-active' : ''}"></div>`;
+        const currentDayOfWeek = today.getDay(); // 0 is Sunday
+        
+        // Find the start of the current week (Sunday)
+        let startDate = new Date(today);
+        startDate.setDate(today.getDate() - currentDayOfWeek);
+        
+        // Go back 4 more weeks to show a total of 5 weeks
+        startDate.setDate(startDate.getDate() - 28);
+        
+        for (let i = 0; i < 35; i++) {
+            const d = new Date(startDate);
+            d.setDate(startDate.getDate() + i);
+            const dateStr = d.toISOString().split('T')[0];
+            const isActive = fullHistoryData.some(h => h.date && h.date.split('T')[0] === dateStr);
+            
+            heatmap.innerHTML += `<div class="heat-cell ${isActive ? 'heat-active' : ''}">${d.getDate()}</div>`;
         }
 
+        // Stats Logic
+        const currentYear = new Date().getFullYear();
+        const thisYearData = (fullHistoryData || []).filter(h => h.date && h.date.startsWith(currentYear.toString()));
         let miles = 0, totalVol = 0, totalCals = 0, cardioCount = 0;
+        
         thisYearData.forEach(h => { 
             let d = parseFloat(h.distance); if(!isNaN(d)) miles += d; 
             let c = parseFloat(h.calories); if(!isNaN(c)) totalCals += c;
@@ -298,7 +321,6 @@
         if (filtered.length === 0) { document.getElementById('history-content').innerHTML = "<p style='text-align:center;'>No logs.</p>"; return; }
         
         let dVol = 0, dW = "--";
-        // Logic to group sets by exercise to find the star
         const grouped = {};
         filtered.forEach(h => {
             if (h.bodyWeight) dW = h.bodyWeight;
@@ -312,13 +334,11 @@
                 const h = logs[0];
                 return `<div style="border-bottom:1px solid #333; padding:10px 0;"><b>${exName}</b><br>${h.distance || 0} mi / ${h.duration || "0:0:0"} | ${h.calories || 0} Cal</div>`;
             } else {
-                // Find top set
                 let maxORM = 0;
                 logs.forEach(l => {
                     const orm = (parseFloat(l.weight) || 0) * (1 + ((parseFloat(l.reps) || 0) / 30));
                     if (orm > maxORM) maxORM = orm;
                 });
-
                 const setsHtml = logs.map(l => {
                     const w = parseFloat(l.weight) || 0, r = parseFloat(l.reps) || 0;
                     dVol += (w * r);
@@ -326,7 +346,6 @@
                     const isTop = orm === maxORM && orm > 0;
                     return `<div>Set ${l.set}: ${w} lbs x ${r} ${isTop ? '⭐' : ''}</div>`;
                 }).join('');
-
                 return `<div style="border-bottom:1px solid #333; padding:10px 0;"><b>${exName}</b>${setsHtml}</div>`;
             }
         }).join('');
