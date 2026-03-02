@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gym Track Pro Elite V21</title>
+    <title>Gym Track Pro Elite V22</title>
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --primary: #0a84ff; --text: #ffffff; --accent: #32d74b; --input-bg: #2c2c2e; --cardio: #ff9f0a; --gold: #ffd700; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; padding-bottom: 120px; }
@@ -36,6 +36,7 @@
         .btn-calc { background: var(--gold); color: black; border: none; padding: 10px; border-radius: 8px; width: 100%; font-weight: bold; text-transform: uppercase; cursor: pointer; }
         .time-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 5px; }
         .time-unit { font-size: 0.5rem; color: #8e8e93; text-align: center; display: block; margin-bottom: 2px; }
+        .top-set-star { color: var(--gold); font-size: 0.8rem; margin-left: 5px; }
     </style>
 </head>
 <body>
@@ -295,19 +296,41 @@
         const sel = document.getElementById('history-calendar').value;
         const filtered = fullHistoryData.filter(h => h.date && h.date.split('T')[0] === sel);
         if (filtered.length === 0) { document.getElementById('history-content').innerHTML = "<p style='text-align:center;'>No logs.</p>"; return; }
+        
         let dVol = 0, dW = "--";
-        const content = filtered.map(h => {
+        // Logic to group sets by exercise to find the star
+        const grouped = {};
+        filtered.forEach(h => {
             if (h.bodyWeight) dW = h.bodyWeight;
-            let detail = "";
-            if (h.exercise && h.exercise.includes("CARDIO")) {
-                detail = `${h.distance || 0} mi / ${h.duration || "0:0:0"} | ${h.calories || 0} Cal`;
+            if (!grouped[h.exercise]) grouped[h.exercise] = [];
+            grouped[h.exercise].push(h);
+        });
+
+        const content = Object.keys(grouped).map(exName => {
+            const logs = grouped[exName];
+            if (exName.includes("CARDIO")) {
+                const h = logs[0];
+                return `<div style="border-bottom:1px solid #333; padding:10px 0;"><b>${exName}</b><br>${h.distance || 0} mi / ${h.duration || "0:0:0"} | ${h.calories || 0} Cal</div>`;
             } else {
-                let w = parseFloat(h.weight) || 0, r = parseFloat(h.reps) || 0;
-                dVol += (w * r);
-                detail = `${w} lbs x ${r} (Vol: ${w*r})`;
+                // Find top set
+                let maxORM = 0;
+                logs.forEach(l => {
+                    const orm = (parseFloat(l.weight) || 0) * (1 + ((parseFloat(l.reps) || 0) / 30));
+                    if (orm > maxORM) maxORM = orm;
+                });
+
+                const setsHtml = logs.map(l => {
+                    const w = parseFloat(l.weight) || 0, r = parseFloat(l.reps) || 0;
+                    dVol += (w * r);
+                    const orm = w * (1 + (r / 30));
+                    const isTop = orm === maxORM && orm > 0;
+                    return `<div>Set ${l.set}: ${w} lbs x ${r} ${isTop ? '⭐' : ''}</div>`;
+                }).join('');
+
+                return `<div style="border-bottom:1px solid #333; padding:10px 0;"><b>${exName}</b>${setsHtml}</div>`;
             }
-            return `<div style="border-bottom:1px solid #333; padding:10px 0;"><b>${h.exercise || "Unknown"}</b><br>${detail}</div>`;
         }).join('');
+
         document.getElementById('history-content').innerHTML = `<div style="background:var(--input-bg); padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid #444;"><b>Vol: ${dVol.toLocaleString()} lbs | BW: ${dW} lbs</b></div>` + content;
     }
     datePicker.addEventListener('change', updateUI);
