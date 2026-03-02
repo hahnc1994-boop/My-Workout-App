@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gym Track Pro Elite V23</title>
+    <title>Gym Track Pro Elite V24</title>
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --primary: #0a84ff; --text: #ffffff; --accent: #32d74b; --input-bg: #2c2c2e; --cardio: #ff9f0a; --gold: #ffd700; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; padding-bottom: 120px; }
@@ -24,14 +24,11 @@
         .achieve-val { font-size: 1.3rem; font-weight: bold; color: var(--gold); display: block; }
         .achieve-label { font-size: 0.6rem; color: #8e8e93; text-transform: uppercase; margin-top: 4px; display: block; }
         .ratio-tag { font-size: 0.7rem; color: var(--accent); font-weight: bold; margin-top: 2px; display: block; }
-        
-        /* Calendar Heatmap Styling */
         .heatmap-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-bottom: 5px; }
         .day-name { font-size: 0.5rem; color: #8e8e93; font-weight: bold; }
         .heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 5px 0 20px 0; }
-        .heat-cell { aspect-ratio: 1; background: #333; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #555; position: relative; }
-        .heat-active { background: var(--accent); color: black; font-weight: bold; box-shadow: 0 0 8px rgba(50, 215, 75, 0.4); border: none; }
-        
+        .heat-cell { aspect-ratio: 1; background: #333; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #555; }
+        .heat-active { background: var(--accent); color: black; font-weight: bold; box-shadow: 0 0 8px rgba(50, 215, 75, 0.4); }
         .remove-card { position: absolute; right: 10px; top: 10px; color: #ff453a; font-weight: bold; cursor: pointer; }
         .total-banner { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
         .total-box { background: #000; border: 1px solid #333; padding: 15px; border-radius: 12px; text-align: center; }
@@ -70,7 +67,7 @@
 <div id="achieve-panel" class="panel">
     <span style="color: var(--gold); font-weight: bold; float: right;" onclick="closePanels()">CLOSE</span>
     <h2 style="color: var(--gold); margin: 0;">Elite Dashboard</h2>
-    <p style="font-size: 0.7rem; color: #8e8e93; margin-bottom: 20px;">Annual Progress Tracker</p>
+    <p style="font-size: 0.7rem; color: #8e8e93; margin-bottom: 20px;">Annual Progress Tracker (CST)</p>
 
     <div class="calc-container">
         <div class="calc-inputs">
@@ -92,7 +89,7 @@
         </div>
     </div>
 
-    <span class="stat-label">Activity Calendar (5 Weeks)</span>
+    <span class="stat-label">Activity Calendar (Central Time)</span>
     <div class="heatmap-header">
         <div class="day-name">SUN</div><div class="day-name">MON</div><div class="day-name">TUE</div><div class="day-name">WED</div><div class="day-name">THU</div><div class="day-name">FRI</div><div class="day-name">SAT</div>
     </div>
@@ -125,7 +122,10 @@
     
     let fullHistoryData = [];
     const datePicker = document.getElementById('date-picker');
-    datePicker.valueAsDate = new Date();
+    
+    // Set default date to local today without UTC shift
+    const now = new Date();
+    datePicker.value = now.toLocaleDateString('en-CA'); // YYYY-MM-DD format
 
     async function init() {
         updateUI();
@@ -148,7 +148,7 @@
 
     function calculateWeightAvg() {
         const uniqueDayWeights = {};
-        fullHistoryData.forEach(h => { if(h.bodyWeight) uniqueDayWeights[h.date.split('T')[0]] = parseFloat(h.bodyWeight); });
+        fullHistoryData.forEach(h => { if(h.bodyWeight && h.date) uniqueDayWeights[h.date.split('T')[0]] = parseFloat(h.bodyWeight); });
         const weights = Object.values(uniqueDayWeights).slice(-7).filter(w => !isNaN(w));
         if(weights.length > 0) {
             const avg = weights.reduce((a, b) => a + b, 0) / weights.length;
@@ -157,7 +157,9 @@
     }
 
     function updateUI() {
-        const day = new Date(datePicker.value + 'T00:00:00').getDay();
+        // Force treat the picker value as local time
+        const [y, m, d] = datePicker.value.split('-').map(Number);
+        const day = new Date(y, m-1, d).getDay();
         document.getElementById('workout-label').innerText = splitNames[day];
         document.getElementById('exercise-list').innerHTML = "";
         if (mainLifts[day]) addExercise(mainLifts[day]);
@@ -259,29 +261,24 @@
         const heatmap = document.getElementById('heatmap');
         heatmap.innerHTML = "";
         
-        // --- Heatmap Calendar Logic ---
-        const today = new Date();
-        const currentDayOfWeek = today.getDay(); // 0 is Sunday
+        // Heatmap Calendar Logic (Local-Safe)
+        const localNow = new Date();
+        const currentDayOfWeek = localNow.getDay();
         
-        // Find the start of the current week (Sunday)
-        let startDate = new Date(today);
-        startDate.setDate(today.getDate() - currentDayOfWeek);
-        
-        // Go back 4 more weeks to show a total of 5 weeks
+        let startDate = new Date(localNow.getFullYear(), localNow.getMonth(), localNow.getDate());
+        startDate.setDate(startDate.getDate() - currentDayOfWeek);
         startDate.setDate(startDate.getDate() - 28);
         
         for (let i = 0; i < 35; i++) {
             const d = new Date(startDate);
             d.setDate(startDate.getDate() + i);
-            const dateStr = d.toISOString().split('T')[0];
-            const isActive = fullHistoryData.some(h => h.date && h.date.split('T')[0] === dateStr);
-            
+            const dateStr = d.toLocaleDateString('en-CA'); // YYYY-MM-DD local
+            const isActive = fullHistoryData.some(h => h.date && h.date.startsWith(dateStr));
             heatmap.innerHTML += `<div class="heat-cell ${isActive ? 'heat-active' : ''}">${d.getDate()}</div>`;
         }
 
-        // Stats Logic
-        const currentYear = new Date().getFullYear();
-        const thisYearData = (fullHistoryData || []).filter(h => h.date && h.date.startsWith(currentYear.toString()));
+        const currentYear = localNow.getFullYear().toString();
+        const thisYearData = (fullHistoryData || []).filter(h => h.date && h.date.startsWith(currentYear));
         let miles = 0, totalVol = 0, totalCals = 0, cardioCount = 0;
         
         thisYearData.forEach(h => { 
@@ -317,7 +314,7 @@
 
     function loadSpecificDay() {
         const sel = document.getElementById('history-calendar').value;
-        const filtered = fullHistoryData.filter(h => h.date && h.date.split('T')[0] === sel);
+        const filtered = fullHistoryData.filter(h => h.date && h.date.startsWith(sel));
         if (filtered.length === 0) { document.getElementById('history-content').innerHTML = "<p style='text-align:center;'>No logs.</p>"; return; }
         
         let dVol = 0, dW = "--";
