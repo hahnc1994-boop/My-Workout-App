@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gym Track Pro Elite V25</title>
+    <title>Gym Track Pro Elite V25.1</title>
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --primary: #0a84ff; --text: #ffffff; --accent: #32d74b; --input-bg: #2c2c2e; --cardio: #ff9f0a; --gold: #ffd700; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; padding-bottom: 120px; }
@@ -145,28 +145,21 @@
     }
 
     function calculateWeightAvg() {
-        // True 7-Day Rolling Average logic
         const now = new Date();
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(now.getDate() - 7);
-        
         const weightsInLastWeek = [];
         const seenDates = new Set();
-
         fullHistoryData.forEach(h => {
             if (h.bodyWeight && h.date) {
                 const entryDate = new Date(h.date);
                 const dateKey = entryDate.toLocaleDateString('en-CA');
-                
-                // Only count weight if it's within the last 7 calendar days 
-                // and we haven't already counted a weight for this specific day
                 if (entryDate >= sevenDaysAgo && entryDate <= now && !seenDates.has(dateKey)) {
                     weightsInLastWeek.push(parseFloat(h.bodyWeight));
                     seenDates.add(dateKey);
                 }
             }
         });
-
         if(weightsInLastWeek.length > 0) {
             const avg = weightsInLastWeek.reduce((a, b) => a + b, 0) / weightsInLastWeek.length;
             document.getElementById('weight-avg').innerText = avg.toFixed(1);
@@ -237,7 +230,6 @@
         const allData = [];
         const date = datePicker.value;
         const bodyWeight = document.getElementById('body-weight').value;
-        
         document.querySelectorAll('.card:not(.cardio)').forEach(card => {
             const name = card.querySelector('.exercise-name').value;
             const notes = card.querySelector('.ex-notes').value;
@@ -246,17 +238,11 @@
                 if(ins[0].value) allData.push({date, exercise: name, set: i+1, weight: ins[0].value, reps: ins[1].value, notes: i === 0 ? notes : "", bodyWeight: i === 0 ? bodyWeight : ""});
             });
         });
-        
         document.querySelectorAll('.cardio').forEach(card => {
             const h = parseInt(card.querySelector('.c-hh').value) || 0;
             const m = parseInt(card.querySelector('.c-mm').value) || 0;
             const s = parseInt(card.querySelector('.c-ss').value) || 0;
-            allData.push({
-                date, exercise: "CARDIO: " + (card.querySelector('.cardio-type').value || "Session"), 
-                duration: `${h}:${m}:${s}`, distance: card.querySelector('.c-dist').value, 
-                heartRate: card.querySelector('.c-hr').value, calories: card.querySelector('.c-cal').value,
-                notes: card.querySelector('.c-notes').value, bodyWeight: bodyWeight
-            });
+            allData.push({date, exercise: "CARDIO: " + (card.querySelector('.cardio-type').value || "Session"), duration: `${h}:${m}:${s}`, distance: card.querySelector('.c-dist').value, heartRate: card.querySelector('.c-hr').value, calories: card.querySelector('.c-cal').value, notes: card.querySelector('.c-notes').value, bodyWeight: bodyWeight});
         });
         await fetch(url, {method: "POST", mode: "no-cors", body: JSON.stringify(allData)});
         btn.innerText = "SAVED!";
@@ -309,10 +295,7 @@
             let m = 0;
             thisYearData.filter(h => h.exercise && h.exercise.toLowerCase().includes(name.toLowerCase())).forEach(h => {
                 let w = parseFloat(h.weight), r = parseFloat(h.reps);
-                if(!isNaN(w) && !isNaN(r)) {
-                   let orm = Math.round(w * (1 + (r / 30)));
-                   if (orm > m) m = orm;
-                }
+                if(!isNaN(w) && !isNaN(r)) { let orm = Math.round(w * (1 + (r / 30))); if (orm > m) m = orm; }
             });
             document.getElementById(id).innerText = m > 0 ? m : "--";
             document.getElementById(rid).innerText = m > 0 ? (m / lastWeight).toFixed(2) + "x" : "--";
@@ -321,6 +304,7 @@
         setPB("pb-incline", "ratio-incline", "Incline Bench"); setPB("pb-squat", "ratio-squat", "Back Squat");
     }
 
+    // UPDATED FUNCTION: Fixes "set undefined" by using the array index + 1
     function loadSpecificDay() {
         const sel = document.getElementById('history-calendar').value;
         const filtered = fullHistoryData.filter(h => h.date && h.date.startsWith(sel));
@@ -343,12 +327,13 @@
                     const orm = (parseFloat(l.weight) || 0) * (1 + ((parseFloat(l.reps) || 0) / 30));
                     if (orm > maxORM) maxORM = orm;
                 });
-                const setsHtml = logs.map(l => {
+                const setsHtml = logs.map((l, index) => {
                     const w = parseFloat(l.weight) || 0, r = parseFloat(l.reps) || 0;
                     dVol += (w * r);
                     const orm = w * (1 + (r / 30));
                     const isTop = orm === maxORM && orm > 0;
-                    return `<div>Set ${l.set}: ${w} lbs x ${r} ${isTop ? '⭐' : ''}</div>`;
+                    // Logic change: Using (index + 1) instead of l.set to ensure it never says undefined
+                    return `<div>Set ${index + 1}: ${w} lbs x ${r} ${isTop ? '⭐' : ''}</div>`;
                 }).join('');
                 return `<div style="border-bottom:1px solid #333; padding:10px 0;"><b>${exName}</b>${setsHtml}</div>`;
             }
