@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gym Track Pro Elite V25.3</title>
+    <title>Gym Track Pro Elite V25.4</title>
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --primary: #0a84ff; --text: #ffffff; --accent: #32d74b; --input-bg: #2c2c2e; --cardio: #ff9f0a; --gold: #ffd700; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; padding-bottom: 120px; }
@@ -267,10 +267,12 @@
             const logs = grouped[exName];
             if (exName.includes("CARDIO")) {
                 const h = logs[0];
-                let timeStr = h.duration || "0:0:0";
-                // Fix: Strip Google's internal 1899 date string if it exists
-                if (timeStr.includes('T')) timeStr = timeStr.split('T')[1].split('.')[0];
-                return `<div style="border-bottom:1px solid #333; padding:10px 0;"><b>${exName}</b><br>${h.distance || 0} mi / ${timeStr} | ${h.calories || 0} Cal</div>`;
+                let timeDisplay = h.duration || "0:0:0";
+                // FIX: Strip Google's internal date and show the ACTUAL duration from the variable h.duration
+                if (timeDisplay.toString().includes('T')) {
+                    timeDisplay = timeDisplay.split('T')[1].split('.')[0];
+                }
+                return `<div style="border-bottom:1px solid #333; padding:10px 0;"><b>${exName}</b><br>${h.distance || 0} mi / ${timeDisplay} | ${h.calories || 0} Cal</div>`;
             } else {
                 let maxORM = 0;
                 logs.forEach(l => {
