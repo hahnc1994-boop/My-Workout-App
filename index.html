@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gym Track Pro Elite V25.1</title>
+    <title>Gym Track Pro Elite V25.2</title>
     <style>
         :root { --bg: #000000; --card: #1c1c1e; --primary: #0a84ff; --text: #ffffff; --accent: #32d74b; --input-bg: #2c2c2e; --cardio: #ff9f0a; --gold: #ffd700; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; padding-bottom: 120px; }
@@ -122,8 +122,7 @@
     
     let fullHistoryData = [];
     const datePicker = document.getElementById('date-picker');
-    const now = new Date();
-    datePicker.value = now.toLocaleDateString('en-CA');
+    datePicker.value = new Date().toLocaleDateString('en-CA');
 
     async function init() {
         updateUI();
@@ -131,38 +130,34 @@
             const res = await fetch(url);
             const data = await res.json();
             fullHistoryData = data.history || [];
-            document.getElementById('exercise-options').innerHTML = (data.exerciseList || []).map(ex => `<option value="${ex}">`).join('');
+            
+            // Fix: Strip "CARDIO: " from autocomplete options
+            const rawOptions = data.exerciseList || [];
+            const cleanOptions = [...new Set(rawOptions.map(opt => opt.replace(/^CARDIO: /i, "")))];
+            document.getElementById('exercise-options').innerHTML = cleanOptions.map(ex => `<option value="${ex}">`).join('');
+            
             calculateWeightAvg();
         } catch(e) { console.log("Init fail", e); }
-    }
-
-    function calculateMissing() {
-        let mx = document.getElementById('calc-max'), w = document.getElementById('calc-weight'), r = document.getElementById('calc-reps');
-        let mVal = parseFloat(mx.value), wVal = parseFloat(w.value), rVal = parseFloat(r.value);
-        if (!mVal && wVal && rVal) mx.value = Math.round(wVal * (1 + rVal / 30));
-        else if (!wVal && mVal && rVal) w.value = Math.round(mVal / (1 + rVal / 30));
-        else if (!rVal && mVal && wVal) r.value = Math.round(30 * (mVal / wVal - 1));
     }
 
     function calculateWeightAvg() {
         const now = new Date();
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(now.getDate() - 7);
-        const weightsInLastWeek = [];
-        const seenDates = new Set();
+        const weights = [];
+        const seen = new Set();
         fullHistoryData.forEach(h => {
             if (h.bodyWeight && h.date) {
                 const entryDate = new Date(h.date);
                 const dateKey = entryDate.toLocaleDateString('en-CA');
-                if (entryDate >= sevenDaysAgo && entryDate <= now && !seenDates.has(dateKey)) {
-                    weightsInLastWeek.push(parseFloat(h.bodyWeight));
-                    seenDates.add(dateKey);
+                if (entryDate >= sevenDaysAgo && entryDate <= now && !seen.has(dateKey)) {
+                    weights.push(parseFloat(h.bodyWeight));
+                    seen.add(dateKey);
                 }
             }
         });
-        if(weightsInLastWeek.length > 0) {
-            const avg = weightsInLastWeek.reduce((a, b) => a + b, 0) / weightsInLastWeek.length;
-            document.getElementById('weight-avg').innerText = avg.toFixed(1);
+        if(weights.length > 0) {
+            document.getElementById('weight-avg').innerText = (weights.reduce((a, b) => a + b, 0) / weights.length).toFixed(1);
         } else {
             document.getElementById('weight-avg').innerText = "--";
         }
@@ -230,6 +225,7 @@
         const allData = [];
         const date = datePicker.value;
         const bodyWeight = document.getElementById('body-weight').value;
+        
         document.querySelectorAll('.card:not(.cardio)').forEach(card => {
             const name = card.querySelector('.exercise-name').value;
             const notes = card.querySelector('.ex-notes').value;
@@ -238,11 +234,25 @@
                 if(ins[0].value) allData.push({date, exercise: name, set: i+1, weight: ins[0].value, reps: ins[1].value, notes: i === 0 ? notes : "", bodyWeight: i === 0 ? bodyWeight : ""});
             });
         });
+        
         document.querySelectorAll('.cardio').forEach(card => {
             const h = parseInt(card.querySelector('.c-hh').value) || 0;
             const m = parseInt(card.querySelector('.c-mm').value) || 0;
             const s = parseInt(card.querySelector('.c-ss').value) || 0;
-            allData.push({date, exercise: "CARDIO: " + (card.querySelector('.cardio-type').value || "Session"), duration: `${h}:${m}:${s}`, distance: card.querySelector('.c-dist').value, heartRate: card.querySelector('.c-hr').value, calories: card.querySelector('.c-cal').value, notes: card.querySelector('.c-notes').value, bodyWeight: bodyWeight});
+            let type = card.querySelector('.cardio-type').value || "Session";
+            
+            // Fix: Check if prefix already exists before adding it
+            if (!type.toUpperCase().startsWith("CARDIO: ")) {
+                type = "CARDIO: " + type;
+            }
+
+            allData.push({
+                date, exercise: type, duration: `${h}:${m}:${s}`, 
+                distance: card.querySelector('.c-dist').value, 
+                heartRate: card.querySelector('.c-hr').value, 
+                calories: card.querySelector('.c-cal').value,
+                notes: card.querySelector('.c-notes').value, bodyWeight: bodyWeight
+            });
         });
         await fetch(url, {method: "POST", mode: "no-cors", body: JSON.stringify(allData)});
         btn.innerText = "SAVED!";
@@ -258,6 +268,48 @@
         loadSpecificDay();
     }
 
+    function loadSpecificDay() {
+        const sel = document.getElementById('history-calendar').value;
+        const filtered = fullHistoryData.filter(h => h.date && h.date.startsWith(sel));
+        if (filtered.length === 0) { document.getElementById('history-content').innerHTML = "<p style='text-align:center;'>No logs.</p>"; return; }
+        let dVol = 0, dW = "--";
+        const grouped = {};
+        filtered.forEach(h => {
+            if (h.bodyWeight) dW = h.bodyWeight;
+            if (!grouped[h.exercise]) grouped[h.exercise] = [];
+            grouped[h.exercise].push(h);
+        });
+        const content = Object.keys(grouped).map(exName => {
+            const logs = grouped[exName];
+            if (exName.includes("CARDIO")) {
+                const h = logs[0];
+                return `<div style="border-bottom:1px solid #333; padding:10px 0;"><b>${exName}</b><br>${h.distance || 0} mi / ${h.duration || "0:0:0"} | ${h.calories || 0} Cal</div>`;
+            } else {
+                let maxORM = 0;
+                logs.forEach(l => {
+                    const orm = (parseFloat(l.weight) || 0) * (1 + ((parseFloat(l.reps) || 0) / 30));
+                    if (orm > maxORM) maxORM = orm;
+                });
+                const setsHtml = logs.map((l, index) => {
+                    const w = parseFloat(l.weight) || 0, r = parseFloat(l.reps) || 0;
+                    dVol += (w * r);
+                    const orm = w * (1 + (r / 30));
+                    return `<div>Set ${index + 1}: ${w} lbs x ${r} ${orm === maxORM && orm > 0 ? '⭐' : ''}</div>`;
+                }).join('');
+                return `<div style="border-bottom:1px solid #333; padding:10px 0;"><b>${exName}</b>${setsHtml}</div>`;
+            }
+        }).join('');
+        document.getElementById('history-content').innerHTML = `<div style="background:var(--input-bg); padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid #444;"><b>Vol: ${dVol.toLocaleString()} lbs | BW: ${dW} lbs</b></div>` + content;
+    }
+
+    function calculateMissing() {
+        let mx = document.getElementById('calc-max'), w = document.getElementById('calc-weight'), r = document.getElementById('calc-reps');
+        let mVal = parseFloat(mx.value), wVal = parseFloat(w.value), rVal = parseFloat(r.value);
+        if (!mVal && wVal && rVal) mx.value = Math.round(wVal * (1 + rVal / 30));
+        else if (!wVal && mVal && rVal) w.value = Math.round(mVal / (1 + rVal / 30));
+        else if (!rVal && mVal && wVal) r.value = Math.round(30 * (mVal / wVal - 1));
+    }
+
     function toggleAchieve() {
         closePanels();
         document.getElementById('achieve-panel').classList.add('open');
@@ -266,11 +318,9 @@
         const localNow = new Date();
         const currentDayOfWeek = localNow.getDay();
         let startDate = new Date(localNow.getFullYear(), localNow.getMonth(), localNow.getDate());
-        startDate.setDate(startDate.getDate() - currentDayOfWeek);
-        startDate.setDate(startDate.getDate() - 28);
+        startDate.setDate(startDate.getDate() - currentDayOfWeek - 28);
         for (let i = 0; i < 35; i++) {
-            const d = new Date(startDate);
-            d.setDate(startDate.getDate() + i);
+            const d = new Date(startDate); d.setDate(startDate.getDate() + i);
             const dateStr = d.toLocaleDateString('en-CA');
             const isActive = fullHistoryData.some(h => h.date && h.date.startsWith(dateStr));
             heatmap.innerHTML += `<div class="heat-cell ${isActive ? 'heat-active' : ''}">${d.getDate()}</div>`;
@@ -304,42 +354,6 @@
         setPB("pb-incline", "ratio-incline", "Incline Bench"); setPB("pb-squat", "ratio-squat", "Back Squat");
     }
 
-    // UPDATED FUNCTION: Fixes "set undefined" by using the array index + 1
-    function loadSpecificDay() {
-        const sel = document.getElementById('history-calendar').value;
-        const filtered = fullHistoryData.filter(h => h.date && h.date.startsWith(sel));
-        if (filtered.length === 0) { document.getElementById('history-content').innerHTML = "<p style='text-align:center;'>No logs.</p>"; return; }
-        let dVol = 0, dW = "--";
-        const grouped = {};
-        filtered.forEach(h => {
-            if (h.bodyWeight) dW = h.bodyWeight;
-            if (!grouped[h.exercise]) grouped[h.exercise] = [];
-            grouped[h.exercise].push(h);
-        });
-        const content = Object.keys(grouped).map(exName => {
-            const logs = grouped[exName];
-            if (exName.includes("CARDIO")) {
-                const h = logs[0];
-                return `<div style="border-bottom:1px solid #333; padding:10px 0;"><b>${exName}</b><br>${h.distance || 0} mi / ${h.duration || "0:0:0"} | ${h.calories || 0} Cal</div>`;
-            } else {
-                let maxORM = 0;
-                logs.forEach(l => {
-                    const orm = (parseFloat(l.weight) || 0) * (1 + ((parseFloat(l.reps) || 0) / 30));
-                    if (orm > maxORM) maxORM = orm;
-                });
-                const setsHtml = logs.map((l, index) => {
-                    const w = parseFloat(l.weight) || 0, r = parseFloat(l.reps) || 0;
-                    dVol += (w * r);
-                    const orm = w * (1 + (r / 30));
-                    const isTop = orm === maxORM && orm > 0;
-                    // Logic change: Using (index + 1) instead of l.set to ensure it never says undefined
-                    return `<div>Set ${index + 1}: ${w} lbs x ${r} ${isTop ? '⭐' : ''}</div>`;
-                }).join('');
-                return `<div style="border-bottom:1px solid #333; padding:10px 0;"><b>${exName}</b>${setsHtml}</div>`;
-            }
-        }).join('');
-        document.getElementById('history-content').innerHTML = `<div style="background:var(--input-bg); padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid #444;"><b>Vol: ${dVol.toLocaleString()} lbs | BW: ${dW} lbs</b></div>` + content;
-    }
     datePicker.addEventListener('change', updateUI);
     init();
 </script>
